@@ -60,6 +60,7 @@ dependencies {
   compile 'com.google.guava:guava:30.0-jre'
   compile 'org.flywaydb:flyway-core:6.3.0'
   compile 'org.postgresql:postgresql:42.2.5'
+  compile group: 'org.jooq', name: 'jooq', version: '3.14.4'
   compileOnly "org.projectlombok:lombok:${lombokVersion}"
   annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 

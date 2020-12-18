@@ -13,8 +13,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 
@@ -32,11 +32,12 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     //implementation 'com.google.guava:guava:29.0-jre'
     implementation 'org.javassist:javassist:3.20.0-GA'
-    implementation 'io.github.marquezproject:marquez-java:0.4.3'
+//    implementation 'io.github.marquezproject:marquez-java:0.4.3'
     // https://mvnrepository.com/artifact/org.apache.spark/spark-core
-    compileOnly 'org.apache.spark:spark-core_2.12:2.4.6'
-    compileOnly 'org.apache.spark:spark-sql_2.12:2.4.6'
-
+    compileOnly 'org.apache.spark:spark-core_2.11:2.4.7'
+    compileOnly 'org.apache.spark:spark-sql_2.11:2.4.7'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.16'
+    annotationProcessor "org.projectlombok:lombok:1.18.16"
     // Use JUnit test framework
     testImplementation 'junit:junit:4.13'
 }

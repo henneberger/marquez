@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.PairRDDFunctions;
@@ -18,19 +19,15 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import marquez.client.Backend;
 import marquez.spark.agent.lifecycle.ExecutionContext;
 import marquez.spark.agent.lifecycle.RddExecutionContext;
 import marquez.spark.agent.lifecycle.SparkSQLExecutionContext;
 import marquez.spark.agent.transformers.ActiveJobTransformer;
 import marquez.spark.agent.transformers.PairRDDFunctionsTransformer;
 
-
+@Slf4j
 public class SparkListener {
-  private static final Logger logger = LoggerFactory.getLogger(SparkListener.class);
 
   private static final Map<Long, SparkSQLExecutionContext> sparkSqlExecutionRegistry = Collections.synchronizedMap(new HashMap<>());
 
@@ -70,11 +67,10 @@ public class SparkListener {
 
   /**
    * called by the agent on init with the provided argument
-   * @param agentArgument
    */
-  public static void init(String agentArgument, Backend backend) {
-    logger.info("init: " + agentArgument);
-    marquezContext = new MarquezContext(agentArgument, backend);
+  public static void init(String agentArgument) {
+    log.info("init: " + agentArgument);
+    marquezContext = new MarquezContext(agentArgument);
     clear();
   }
 
@@ -87,10 +83,9 @@ public class SparkListener {
   /**
    * Called through the agent to register every new job and get access to the RDDs
    * @see ActiveJobTransformer
-   * @param activeJob
    */
   public static void registerActiveJob(ActiveJob activeJob) {
-    logger.info("registerActiveJob: " + activeJob);
+    log.info("registerActiveJob: " + activeJob);
     String executionIdProp = activeJob.properties().getProperty("spark.sql.execution.id");
     ExecutionContext context;
     if (executionIdProp != null) {
@@ -109,7 +104,7 @@ public class SparkListener {
    * @param conf the write config
    */
   public static void registerOutput(PairRDDFunctions<?, ?> pairRDDFunctions, Configuration conf) {
-    logger.info("registerOutput: " + pairRDDFunctions + " " + conf);
+    log.info("registerOutput: " + pairRDDFunctions + " " + conf);
     Field[] declaredFields = pairRDDFunctions.getClass().getDeclaredFields();
     for (Field field : declaredFields) {
       if (field.getName().endsWith("self") && RDD.class.isAssignableFrom(field.getType())) {
@@ -126,40 +121,36 @@ public class SparkListener {
 
   /**
    * called by the SparkListener when a spark-sql (Dataset api) execution starts
-   * @param startEvent
    */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    logger.info("sparkSQLExecStart: " + startEvent);
+    log.info("sparkSQLExecStart: " + startEvent);
     SparkSQLExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
     context.start(startEvent);
   }
 
   /**
    * called by the SparkListener when a spark-sql (Dataset api) execution ends
-   * @param endEvent
    */
   private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
-    logger.info("sparkSQLExecEnd: " + endEvent);
+    log.info("sparkSQLExecEnd: " + endEvent);
     SparkSQLExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     context.end(endEvent);
   }
 
   /**
    * called by the SparkListener when a job starts
-   * @param jobStart
    */
   private static void jobStarted(SparkListenerJobStart jobStart) {
-    logger.info("jobStarted: " + jobStart);
+    log.info("jobStarted: " + jobStart);
     ExecutionContext context = getExecutionContext(jobStart.jobId());
     context.start(jobStart);
   }
 
   /**
    * called by the SparkListener when a job ends
-   * @param jobStart
    */
   private static void jobEnded(SparkListenerJobEnd jobEnd) {
-    logger.info("jobEnded: " + jobEnd);
+    log.info("jobEnded: " + jobEnd);
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     context.end(jobEnd);
   }
@@ -170,7 +161,7 @@ public class SparkListener {
    * @param context the spark context
    */
   public static void instrument(SparkContext context) {
-    logger.info("instrument: " + context);
+    log.info("instrument: " + context);
     Class<?>[] interfaces = {SparkListenerInterface.class};
     SparkListenerInterface listener = (SparkListenerInterface)Proxy.newProxyInstance(SparkListener.class.getClassLoader(), interfaces, new InvocationHandler(){
 
@@ -192,7 +183,7 @@ public class SparkListener {
         if (args.length == 1 & args[0]!=null) {
           Object arg = args[0];
           String eventType = "(" + arg.getClass().getSimpleName() + ")";
-          logger.info(  prefix + " -: " + method.getName() + eventType);
+          log.info(  prefix + " -: " + method.getName() + eventType);
           if (method.getName().equals("onJobStart") && arg instanceof SparkListenerJobStart) {
             jobStarted((SparkListenerJobStart)args[0]);
           } else if (method.getName().equals("onJobEnd") && arg instanceof SparkListenerJobEnd) {
@@ -202,12 +193,12 @@ public class SparkListener {
           } else if (method.getName().equals("onOtherEvent") && arg instanceof SparkListenerSQLExecutionEnd) {
             sparkSQLExecEnd((SparkListenerSQLExecutionEnd)arg);
           } else {
-            logger.info(  prefix + " UNEXPECTED -(event)----" + arg);
+            log.info(  prefix + " UNEXPECTED -(event)----" + arg);
           }
         } else {
-          logger.info(  prefix + " UNEXPECTED -(method)----" + method);
+          log.info(  prefix + " UNEXPECTED -(method)----" + method);
           for (Object arg : args) {
-            logger.info(prefix + " UNEXPECTED -(arg)-------  " + arg);
+            log.info(prefix + " UNEXPECTED -(arg)-------  " + arg);
           }
         }
         return null;

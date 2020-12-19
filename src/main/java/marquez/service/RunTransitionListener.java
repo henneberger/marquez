@@ -3,6 +3,7 @@ package marquez.service;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import marquez.common.models.DatasetVersionId;
@@ -42,6 +43,7 @@ public interface RunTransitionListener {
 
   /** Job input update event lists all the input versions for a given run of a job */
   @Value
+  @Builder
   class JobInputUpdate {
     @NonNull RunId runId;
     @NonNull RunMeta runMeta;
@@ -51,6 +53,7 @@ public interface RunTransitionListener {
 
   /** metadata for a specific input of a job. the version of the dataset consumed */
   @Value
+  @Builder
   class RunInput {
     @NonNull DatasetVersionId datasetVersionId;
     // TODO(Julien): add metadata attached to an input (ex: range predicate)

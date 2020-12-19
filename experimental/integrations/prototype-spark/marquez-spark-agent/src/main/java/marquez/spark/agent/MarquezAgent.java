@@ -2,8 +2,6 @@ package marquez.spark.agent;
 
 import java.lang.instrument.Instrumentation;
 import lombok.extern.slf4j.Slf4j;
-import marquez.spark.agent.transformers.ActiveJobTransformer;
-import marquez.spark.agent.transformers.PairRDDFunctionsTransformer;
 import marquez.spark.agent.transformers.SparkContextTransformer;
 
 @Slf4j
@@ -26,9 +24,9 @@ public class MarquezAgent {
   }
 
   public static void instrument(Instrumentation inst) {
-    inst.addTransformer(new ActiveJobTransformer());
+//    inst.addTransformer(new ActiveJobTransformer());
     inst.addTransformer(new SparkContextTransformer());
-    inst.addTransformer(new PairRDDFunctionsTransformer());
+//    inst.addTransformer(new PairRDDFunctionsTransformer());
   }
 
   private static void addShutDownHook() {

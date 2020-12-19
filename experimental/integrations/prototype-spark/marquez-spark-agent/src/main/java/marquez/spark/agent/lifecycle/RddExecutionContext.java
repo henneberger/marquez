@@ -59,7 +59,7 @@ public class RddExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     extraInfo.append(Rdds.toString(jobStart));
-    this.runId = marquezContext.startRun(jobStart.time(), inputs, outputs, extraInfo.toString());
+//    this.runId = marquezContext.startRun(jobStart.time(), inputs, outputs, extraInfo.toString());
   }
 
   @Override
@@ -68,9 +68,9 @@ public class RddExecutionContext implements ExecutionContext {
     if (jobEnd.jobResult() instanceof JobFailed) {
       Exception e = ((JobFailed)jobEnd.jobResult()).exception();
       e.printStackTrace(System.out);
-      marquezContext.failure(runId, jobId, jobEnd.time(), outputs, e);
+//      marquezContext.failure(runId, jobId, jobEnd.time(), outputs, e);
     } else if (jobEnd.jobResult().getClass().getSimpleName().startsWith("JobSucceeded")){
-      marquezContext.success(runId, jobId, jobEnd.time(), outputs);
+//      marquezContext.success(runId, jobId, jobEnd.time(), outputs);
     } else {
       extraInfo.append("Unknown status: " ).append(jobEnd.jobResult()).append("\n");
     }

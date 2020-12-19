@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,6 +29,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
+@Builder
 public class DatasetRow {
   @Getter @NonNull private final UUID uuid;
   @Getter @NonNull private final String type;

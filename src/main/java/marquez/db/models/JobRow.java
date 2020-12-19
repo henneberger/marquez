@@ -18,10 +18,15 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
 @Value
+@Builder
+@AllArgsConstructor
 public class JobRow {
   @NonNull UUID uuid;
   @NonNull String type;

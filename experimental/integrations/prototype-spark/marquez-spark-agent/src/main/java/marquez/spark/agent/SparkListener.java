@@ -123,7 +123,7 @@ public class SparkListener {
    * called by the SparkListener when a spark-sql (Dataset api) execution starts
    */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    log.info("sparkSQLExecStart: " + startEvent);
+//    log.info("sparkSQLExecStart: " + startEvent);
     SparkSQLExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
     context.start(startEvent);
   }

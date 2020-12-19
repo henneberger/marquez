@@ -65,8 +65,8 @@ public interface RunDao extends SqlObject {
                 .bindBean(row)
                 .execute());
     // Input versions
-    row.getInputVersionUuids()
-        .forEach(inputVersionUuid -> updateInputVersions(row.getUuid(), inputVersionUuid));
+//    row.getInputVersionUuids()
+//        .forEach(inputVersionUuid -> updateInputVersions(row.getUuid(), inputVersionUuid));
     // Latest run
     final Instant updateAt = row.getCreatedAt();
     createJobVersionDao().updateLatestRun(row.getJobVersionUuid(), updateAt, row.getUuid());

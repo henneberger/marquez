@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Joiner;
 import com.google.common.hash.Hashing;
 import io.dropwizard.jackson.Jackson;
+import io.dropwizard.util.Strings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
@@ -67,6 +68,9 @@ public final class Utils {
   }
 
   public static <T> T fromJson(@NonNull final String json, @NonNull final TypeReference<T> type) {
+    if (Strings.isNullOrEmpty(json)) {
+      return null;
+    }
     try {
       return MAPPER.readValue(json, type);
     } catch (IOException e) {

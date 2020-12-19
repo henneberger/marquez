@@ -1,11 +1,16 @@
 package marquez.spark.agent;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.codehaus.jackson.map.ObjectMapper;
 
 @Slf4j
 public class MarquezContext {
@@ -13,7 +18,7 @@ public class MarquezContext {
   private String jobNamespace;
   private String jobName;
   private String parentRunId;
-
+  private final CloseableHttpClient httpclient;
   private String get(String[] elements, String name, int index) {
     boolean check = elements.length > index + 1 && name.equals(elements[index]);
     if (check) {
@@ -35,92 +40,38 @@ public class MarquezContext {
     jobName = get(elements, "jobs", 5);
     parentRunId = get(elements, "runs", 7);
     log.info(String.format("/api/%s/namespaces/%s/jobs/%s/runs/%s", version, jobNamespace, jobName, parentRunId));
-//    marquezClient = Clients.newWriteOnlyClient(Backends.newLoggingBackend());
-  }
-//
-//  public MarquezContext(
-//      MarquezWriteOnlyClient marquezClient, String jobNamespace, String jobName, String parentRunId) {
-//    super();
-//    this.marquezClient = marquezClient;
-//    this.jobNamespace = jobNamespace;
-//    this.jobName = jobName;
-//    this.parentRunId = parentRunId;
-//  }
-//
-//  public DatasetId ensureDatasetExists(String input) {
-//    String protocol;
-//    try {
-//      URL inputUrl = new URL(input);
-//      protocol=inputUrl.getProtocol();
-//    } catch (MalformedURLException e) {
-//      protocol = "unknown";
-//    }
-//    String namespace = protocol;
-//    String name = input;
-//    DatasetMeta meta = DbTableMeta.builder().sourceName(protocol).physicalName(name).build();
-//    marquezClient.createDataset(namespace, name, meta);
-//    return new DatasetId(namespace, name);
-//  }
-
-  public UUID startRun(long jobStartTime, List<String> inputs, List<String> outputs, String extraInfo) {
-    //    Set<DatasetId> inputIds = new HashSet<DatasetId>();
-//    for (String input : inputs) {
-//      inputIds.add(ensureDatasetExists(input));
-//
-//    }
-//    Set<DatasetId> outputIds = new HashSet<DatasetId>();
-//    for (String output : outputs) {
-//      outputIds.add(ensureDatasetExists(output));
-//    }
-//    Map<String, String> context = ImmutableMap.of("spark.extraInfo", extraInfo);
-//    marquezClient.createJob(jobNamespace, jobName, JobMeta.builder().inputs(inputIds).outputs(outputIds).type(BATCH).context(context ).build());
-//    UUID runId = UUID.randomUUID();
-//    marquezClient.createRun(jobNamespace, jobName, new RunMeta(runId.toString(), null, null, null));
-//    marquezClient.markRunAsRunning(runId.toString(), Instant.ofEpochMilli(jobStartTime));
-    return UUID.randomUUID();
+    httpclient = HttpClients.createDefault();
   }
 
-  public void success(UUID runId, int jobId, long jobEndTime, List<String> outputs) {
+  public void emit(LineageEvent event) {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      String json = mapper.writeValueAsString(event);
+      log.info("calling lineage: {}", json);
 
+      HttpPost httpPost = new HttpPost("http://localhost:5000/api/v1/event");
+      StringEntity entity = new StringEntity(json);
+      httpPost.setEntity(entity);
+      httpPost.setHeader("Accept", "application/json");
+      httpPost.setHeader("Content-type", "application/json");
 
-//    for (String output : outputs) {
-//      updateOutput(output, runId);
-//    }
-//    Instant at = Instant.ofEpochMilli(jobEndTime);
-//    marquezClient.markRunAsCompleted(runId.toString(), at);
-  }
-
-  public void failure(UUID runId, int jobId, long jobEndTime, List<String> outputs, Exception error) {
-//    for (String output : outputs) {
-//      updateOutput(output, runId);
-//    }
-//    Instant at = Instant.ofEpochMilli(jobEndTime);
-//    error.printStackTrace(System.out);
-//    marquezClient.markRunAsFailed(runId.toString(), at);
-  }
-
-  private void updateOutput(String output, UUID runId) {
-//    String protocol;
-//    try {
-//      URL outputUrl = new URL(output);
-//      protocol=outputUrl.getProtocol();
-//    } catch (MalformedURLException e) {
-//      protocol = "unknown";
-//    }
-//    String namespace = protocol;
-//    String name = output;
-//    DatasetMeta meta = DbTableMeta.builder().sourceName(protocol).physicalName(name).runId(runId.toString()).build();
-//    marquezClient.createDataset(namespace, name, meta);
+      try (CloseableHttpResponse response2 = httpclient.execute(httpPost)) {
+        System.out.println(response2.getCode() + " " + response2.getReasonPhrase());
+        HttpEntity entity2 = response2.getEntity();
+        EntityUtils.consume(entity2);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      log.error("Could not emit lineage", e);
+    }
   }
 
   public void close() {
-//    try {
-//      marquezClient.close();
+    try {
+      httpclient.close();
 //      marquezClient = null;
-//    } catch (IOException e) {
-//      e.printStackTrace(System.out);
-//    }
+    } catch (IOException e) {
+      e.printStackTrace(System.out);
+    }
   }
-
-
 }

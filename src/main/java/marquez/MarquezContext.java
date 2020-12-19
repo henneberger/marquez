@@ -1,5 +1,7 @@
 package marquez;
 
+import com.github.jasync.sql.db.pool.ConnectionPool;
+import com.github.jasync.sql.db.postgresql.PostgreSQLConnection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -10,6 +12,7 @@ import lombok.NonNull;
 import marquez.api.DatasetResource;
 import marquez.api.JobResource;
 import marquez.api.NamespaceResource;
+import marquez.api.OpenLineageResource;
 import marquez.api.SourceResource;
 import marquez.api.TagResource;
 import marquez.api.exceptions.JdbiExceptionExceptionMapper;
@@ -56,6 +59,7 @@ public final class MarquezContext {
   @Getter private final TagDao tagDao;
 
   private final List<RunTransitionListener> runTransitionListeners;
+  private final ConnectionPool<PostgreSQLConnection> con;
 
   @Getter private final NamespaceService namespaceService;
   @Getter private final SourceService sourceService;
@@ -77,7 +81,8 @@ public final class MarquezContext {
   private MarquezContext(
       @NonNull final Jdbi jdbi,
       @NonNull final ImmutableSet<Tag> tags,
-      @NonNull final List<RunTransitionListener> runTransitionListeners)
+      @NonNull final List<RunTransitionListener> runTransitionListeners,
+      ConnectionPool<PostgreSQLConnection> con)
       throws MarquezServiceException {
     this.namespaceDao = jdbi.onDemand(NamespaceDao.class);
     this.ownerDao = jdbi.onDemand(OwnerDao.class);
@@ -95,6 +100,7 @@ public final class MarquezContext {
     this.tagDao = jdbi.onDemand(TagDao.class);
 
     this.runTransitionListeners = runTransitionListeners;
+    this.con = con;
 
     this.namespaceService = new NamespaceService(namespaceDao, ownerDao, namespaceOwnershipDao);
     this.sourceService = new SourceService(sourceDao);
@@ -134,7 +140,8 @@ public final class MarquezContext {
             jobResource,
             tagResource,
             serviceExceptionMapper,
-            jdbiException);
+            jdbiException,
+            new OpenLineageResource(con, jobDao, runDao, jobVersionDao, datasetDao, namespaceDao, runTransitionListeners, datasetVersionDao, sourceDao, runArgsDao, jobContextDao));
   }
 
   public void registerListener(@NonNull RunTransitionListener listener) {
@@ -149,6 +156,7 @@ public final class MarquezContext {
     private Jdbi jdbi;
     private ImmutableSet<Tag> tags;
     private List<RunTransitionListener> runTransitionListeners;
+    private ConnectionPool<PostgreSQLConnection> con;
 
     Builder() {
       this.tags = ImmutableSet.of();
@@ -176,7 +184,12 @@ public final class MarquezContext {
     }
 
     public MarquezContext build() throws MarquezServiceException {
-      return new MarquezContext(jdbi, tags, runTransitionListeners);
+      return new MarquezContext(jdbi, tags, runTransitionListeners, con);
+    }
+
+    public Builder connectionPool(ConnectionPool<PostgreSQLConnection> con) {
+      this.con = con;
+      return this;
     }
   }
 }

@@ -36,7 +36,12 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.spark/spark-core
     compileOnly 'org.apache.spark:spark-core_2.11:2.4.7'
     compileOnly 'org.apache.spark:spark-sql_2.11:2.4.7'
+// https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.16'
+    compile group: 'org.apache.httpcomponents.client5', name: 'httpclient5', version: '5.0.3'
+
+
     annotationProcessor "org.projectlombok:lombok:1.18.16"
     // Use JUnit test framework
     testImplementation 'junit:junit:4.13'

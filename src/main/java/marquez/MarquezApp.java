@@ -16,6 +16,10 @@ package marquez;
 
 import com.codahale.metrics.jdbi3.InstrumentedSqlLogger;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.jasync.sql.db.exceptions.UnableToParseURLException;
+import com.github.jasync.sql.db.pool.ConnectionPool;
+import com.github.jasync.sql.db.postgresql.PostgreSQLConnection;
+import com.github.jasync.sql.db.postgresql.PostgreSQLConnectionBuilder;
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
@@ -28,6 +32,9 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
 import io.prometheus.client.hotspot.DefaultExports;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import javax.sql.DataSource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +102,8 @@ public final class MarquezApp extends Application<MarquezConfig> {
   }
 
   public void registerResources(
-      @NonNull MarquezConfig config, @NonNull Environment env, @NonNull DataSource source) {
+      @NonNull MarquezConfig config, @NonNull Environment env, @NonNull DataSource source)
+  throws UnableToParseURLException {
     final JdbiFactory factory = new JdbiFactory();
     final Jdbi jdbi =
         factory
@@ -104,12 +112,26 @@ public final class MarquezApp extends Application<MarquezConfig> {
             .installPlugin(new PostgresPlugin());
     jdbi.setSqlLogger(new InstrumentedSqlLogger(env.metrics()));
 
+    ConnectionPool<PostgreSQLConnection> con = PostgreSQLConnectionBuilder.createConnectionPool(
+        config.getDataSourceFactory().getUrl() + "?user=" + encodeValue(config.getDataSourceFactory().getUser() +
+        "&password=" + encodeValue(config.getDataSourceFactory().getPassword()))
+    );
+
     final MarquezContext context =
-        MarquezContext.builder().jdbi(jdbi).tags(config.getTags()).build();
+        MarquezContext.builder().jdbi(jdbi).connectionPool(con).tags(config.getTags()).build();
 
     log.debug("Registering resources...");
     for (final Object resource : context.getResources()) {
       env.jersey().register(resource);
+    }
+  }
+
+  private String encodeValue(String value) {
+    try {
+      return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+      return null;
     }
   }
 

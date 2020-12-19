@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import java.time.Instant;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -26,6 +27,7 @@ import marquez.common.models.RunId;
 
 @EqualsAndHashCode
 @ToString
+@Builder
 public final class RunMeta {
   @Nullable private final RunId id;
   @Nullable private final Instant nominalStartTime;

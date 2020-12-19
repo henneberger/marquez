@@ -48,6 +48,7 @@ public interface DatasetDao extends SqlObject {
                         + "source_uuid, "
                         + "name, "
                         + "physical_name, "
+                        + "current_version_uuid, "
                         + "description"
                         + ") VALUES ("
                         + ":uuid, "
@@ -58,6 +59,7 @@ public interface DatasetDao extends SqlObject {
                         + ":sourceUuid, "
                         + ":name, "
                         + ":physicalName, "
+                        + ":currentVersionUuid, "
                         + ":description)")
                 .bindBean(row)
                 .execute());

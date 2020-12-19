@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.Builder;
 import lombok.NonNull;
 import marquez.db.mappers.ExtendedJobVersionRowMapper;
 import marquez.db.models.ExtendedJobVersionRow;

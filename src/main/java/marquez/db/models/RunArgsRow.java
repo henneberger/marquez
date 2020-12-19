@@ -16,10 +16,14 @@ package marquez.db.models;
 
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 @Value
+@Builder
+@AllArgsConstructor
 public class RunArgsRow {
   @NonNull UUID uuid;
   @NonNull Instant createdAt;

@@ -21,37 +21,88 @@ import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import lombok.NonNull;
 import lombok.Value;
-import marquez.service.TagService;
+import marquez.common.models.DatasetName;
+import marquez.common.models.FieldName;
+import marquez.common.models.NamespaceName;
+import marquez.common.models.TagName;
+import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.models.Dataset;
 import marquez.service.models.Tag;
 
-@Path("/api/v1/tags")
-public class TagResource {
-  private final TagService service;
+@Path("/api/v1")
+public class TagResource extends AbstractResource {
 
-  public TagResource(@NonNull final TagService service) {
-    this.service = service;
+  public TagResource(ServiceFactory serviceFactory) {
+    super(serviceFactory);
   }
 
   @Timed
   @ResponseMetered
   @ExceptionMetered
   @GET
+  @Path("tags")
   @Produces(APPLICATION_JSON)
   public Response list(
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final ImmutableSet<Tag> tags = service.getAll(limit, offset);
+    final ImmutableSet<Tag> tags = serviceFactory.getTagService().list(limit, offset);
     return Response.ok(new Tags(tags)).build();
+  }
+
+  @Timed
+  @ResponseMetered
+  @ExceptionMetered
+  @POST
+  @Path("/namespaces/{namespace}/datasets/{dataset}/tags/{tag}")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  public Response tag(
+      @PathParam("namespace") NamespaceName namespaceName,
+      @PathParam("dataset") DatasetName datasetName,
+      @PathParam("tag") TagName tagName)
+      throws MarquezServiceException {
+    throwIfNotExists(namespaceName);
+    throwIfNotExists(namespaceName, datasetName);
+    throwIfNotExists(tagName);
+
+    final Dataset dataset = serviceFactory.getDatasetService().tagWith(namespaceName, datasetName, tagName);
+    return Response.ok(dataset).build();
+  }
+
+  @Timed
+  @ResponseMetered
+  @ExceptionMetered
+  @POST
+  @Path("/namespaces/{namespace}/datasets/{dataset}/fields/{field}/tags/{tag}")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  public Response tagField(
+      @PathParam("namespace") NamespaceName namespaceName,
+      @PathParam("dataset") DatasetName datasetName,
+      @PathParam("field") FieldName fieldName,
+      @PathParam("tag") TagName tagName)
+      throws MarquezServiceException {
+    throwIfNotExists(namespaceName);
+    throwIfNotExists(namespaceName, datasetName);
+    throwIfNotExists(namespaceName, datasetName, fieldName);
+    throwIfNotExists(tagName);
+
+    final Dataset dataset =
+        serviceFactory.getDatasetService().tagFieldWith(namespaceName, datasetName, fieldName, tagName);
+    return Response.ok(dataset).build();
   }
 
   @Value

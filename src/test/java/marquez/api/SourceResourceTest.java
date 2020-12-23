@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -37,12 +36,14 @@ public class SourceResourceTest {
 
   @Rule public MockitoRule rule = MockitoJUnit.rule();
 
-  @Mock private SourceService service;
+  private SourceService service;
   private SourceResource resource;
 
   @Before
   public void setUp() {
-    resource = new SourceResource(service);
+    MockServiceFactory sf = new MockServiceFactory();
+    this.service = sf.getSourceService();
+    resource = new SourceResource(sf);
   }
 
   @Test
@@ -66,7 +67,7 @@ public class SourceResourceTest {
 
   @Test
   public void testList() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(SOURCES);
+    when(service.list(4, 0)).thenReturn(SOURCES);
 
     final Response response = resource.list(4, 0);
     assertThat(response.getStatus()).isEqualTo(200);
@@ -76,7 +77,7 @@ public class SourceResourceTest {
 
   @Test
   public void testList_empty() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(ImmutableList.of());
+    when(service.list(4, 0)).thenReturn(ImmutableList.of());
 
     final Response response = resource.list(4, 0);
     assertThat(response.getStatus()).isEqualTo(200);

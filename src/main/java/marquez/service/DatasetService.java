@@ -21,7 +21,6 @@ import static com.google.common.collect.Iterables.toArray;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.prometheus.client.Counter;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -58,22 +57,7 @@ import marquez.service.models.Version;
 import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 
 @Slf4j
-public class DatasetService {
-  private static final Counter datasets =
-      Counter.build()
-          .namespace("marquez")
-          .name("dataset_total")
-          .labelNames("namespace_name", "dataset_type")
-          .help("Total number of datasets.")
-          .register();
-  private static final Counter versions =
-      Counter.build()
-          .namespace("marquez")
-          .name("dataset_versions_total")
-          .labelNames("namespace_name", "dataset_type", "dataset_name")
-          .help("Total number of dataset versions.")
-          .register();
-
+public class DatasetService implements ServiceMetrics {
   private final NamespaceDao namespaceDao;
   private final SourceDao sourceDao;
   private final DatasetDao datasetDao;

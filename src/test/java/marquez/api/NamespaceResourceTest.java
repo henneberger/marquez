@@ -41,12 +41,14 @@ public class NamespaceResourceTest {
 
   @Rule public MockitoRule rule = MockitoJUnit.rule();
 
-  @Mock private NamespaceService service;
+  private NamespaceService service;
   private NamespaceResource resource;
 
   @Before
   public void setUp() {
-    resource = new NamespaceResource(service);
+    MockServiceFactory sf = new MockServiceFactory();
+    service = sf.getNamespaceService();
+    resource = new NamespaceResource(sf);
   }
 
   @Test

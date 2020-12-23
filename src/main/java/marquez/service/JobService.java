@@ -57,7 +57,7 @@ import marquez.service.models.JobMeta;
 import marquez.service.models.Version;
 
 @Slf4j
-public class JobService {
+public class JobService implements ServiceMetrics {
   private final NamespaceDao namespaceDao;
   private final DatasetDao datasetDao;
   private final JobDao jobDao;
@@ -83,26 +83,33 @@ public class JobService {
     this.runService = runService;
   }
 
+  //job context and run context
+  // version location, job context = facet
   public Job createOrUpdate(
       @NonNull NamespaceName namespaceName, @NonNull JobName jobName, @NonNull JobMeta jobMeta)
       throws MarquezServiceException {
     JobRow job = getOrCreateJobRow(namespaceName, jobName, jobMeta);
 
-    final Version jobVersion = jobMeta.version(namespaceName, jobName);
-    if (!jobVersionDao.exists(jobVersion.getValue())) {
-      UUID jobVersionUuid =
-          createJobVersion(job.getUuid(), jobVersion, namespaceName, jobName, jobMeta).getUuid();
-      updateRunFromJobMeta(jobMeta, jobVersionUuid, namespaceName, jobName);
-      // Get a new job as versions have been attached
-      return get(namespaceName, jobName).get();
-    } else if (jobMeta.getRunId().isPresent()) {
-      Optional<ExtendedJobVersionRow> jobVersionUuid =
-          jobVersionDao.findVersion(jobVersion.getValue());
-      ExtendedJobVersionRow jobVersionRow =
-          jobVersionUuid.orElseThrow(MarquezServiceException::new);
+    ExtendedJobVersionRow jobVersionRow = getOrCreateJobVersion(namespaceName, jobName, jobMeta, job);
+
+    if (jobMeta.getRunId().isPresent()) {
       updateRunFromJobMeta(jobMeta, jobVersionRow.getUuid(), namespaceName, jobName);
     }
-    return toJob(job);
+
+    return get(namespaceName, jobName).get();
+  }
+
+  private ExtendedJobVersionRow getOrCreateJobVersion(NamespaceName namespaceName,
+      JobName jobName, JobMeta jobMeta, JobRow job) {
+    final Version jobVersion = jobMeta.version(namespaceName, jobName);
+
+    Optional<ExtendedJobVersionRow> jobVersionRow = jobVersionDao.findVersion(jobVersion.getValue());
+
+    if (jobVersionRow.isEmpty()) {
+      return createJobVersion(job.getUuid(), jobVersion, namespaceName, jobName, jobMeta);
+    } else {
+      return jobVersionRow.get();
+    }
   }
 
   private JobRow getOrCreateJobRow(NamespaceName namespaceName, JobName jobName, JobMeta jobMeta) {
@@ -113,7 +120,7 @@ public class JobService {
     return jobRow.get();
   }
 
-  private JobVersionRow createJobVersion(
+  private ExtendedJobVersionRow createJobVersion(
       UUID jobId,
       Version jobVersion,
       NamespaceName namespaceName,
@@ -134,14 +141,14 @@ public class JobService {
             jobMeta.getLocation().orElse(null),
             jobVersion);
 
-    JobMetrics.emitVersionMetric(
+    ServiceMetrics.emitVersionMetric(
         namespaceName.getValue(), jobMeta.getType().toString(), jobName.getValue());
 
     log.info(
         "Successfully created version '{}' for job '{}'.",
         jobVersion.getValue(),
         jobName.getValue());
-    return newJobVersionRow;
+    return jobVersionDao.findBy(newJobVersionRow.getUuid()).get();
   }
 
   private void updateRunFromJobMeta(
@@ -188,7 +195,7 @@ public class JobService {
     final JobRow newJobRow = Mapper.toJobRow(namespaceRow, jobName, jobMeta);
     jobDao.insert(newJobRow);
 
-    JobMetrics.emitJobCreationMetric(namespaceName.getValue(), jobMeta.getType().toString());
+    ServiceMetrics.emitJobCreationMetric(namespaceName.getValue(), jobMeta.getType().toString());
 
     log.info(
         "Successfully created job '{}' for namespace '{}' with meta: {}",

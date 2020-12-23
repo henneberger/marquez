@@ -35,17 +35,15 @@ import lombok.NonNull;
 import lombok.Value;
 import marquez.api.exceptions.SourceNotFoundException;
 import marquez.common.models.SourceName;
-import marquez.service.SourceService;
+import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Source;
 import marquez.service.models.SourceMeta;
 
 @Path("/api/v1/sources")
-public class SourceResource {
-  private final SourceService service;
-
-  public SourceResource(@NonNull final SourceService service) {
-    this.service = service;
+public class SourceResource extends AbstractResource {
+  public SourceResource(ServiceFactory serviceFactory) {
+    super(serviceFactory);
   }
 
   @Timed
@@ -57,7 +55,7 @@ public class SourceResource {
   @Produces(APPLICATION_JSON)
   public Response createOrUpdate(@PathParam("source") SourceName name, @Valid SourceMeta meta)
       throws MarquezServiceException {
-    final Source source = service.createOrUpdate(name, meta);
+    final Source source = serviceFactory.getSourceService().createOrUpdate(name, meta);
     return Response.ok(source).build();
   }
 
@@ -68,7 +66,7 @@ public class SourceResource {
   @Path("{source}")
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("source") SourceName name) throws MarquezServiceException {
-    final Source source = service.get(name).orElseThrow(() -> new SourceNotFoundException(name));
+    final Source source = serviceFactory.getSourceService().get(name).orElseThrow(() -> new SourceNotFoundException(name));
     return Response.ok(source).build();
   }
 
@@ -81,7 +79,7 @@ public class SourceResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final ImmutableList<Source> sources = service.getAll(limit, offset);
+    final ImmutableList<Source> sources = serviceFactory.getSourceService().list(limit, offset);
     return Response.ok(new Sources(sources)).build();
   }
 

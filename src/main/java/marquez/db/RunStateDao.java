@@ -60,7 +60,7 @@ public interface RunStateDao extends SqlObject {
     }
     // Modified
     if (complete && outputVersionUuids != null && outputVersionUuids.size() > 0) {
-      createDatasetDao().updateLastModifedAt(outputVersionUuids, updateAt);
+      createDatasetDao().updateLastModifiedAt(outputVersionUuids, updateAt);
     }
   }
 

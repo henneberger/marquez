@@ -35,7 +35,7 @@ public class RunRow {
   @Getter @NonNull private final Instant createdAt;
   @Getter @NonNull private final Instant updatedAt;
   @Getter @NonNull private final UUID jobVersionUuid;
-  @Getter @NonNull private final UUID runArgsUuid;
+  @Getter private final UUID runArgsUuid;
   @Getter @NonNull private final List<UUID> inputVersionUuids;
   @Nullable private final Instant nominalStartTime;
   @Nullable private final Instant nominalEndTime;

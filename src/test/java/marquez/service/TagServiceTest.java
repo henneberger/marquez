@@ -96,7 +96,7 @@ public class TagServiceTest {
     final List<TagRow> newRows = newTagRows(4);
     when(dao.findAll(4, 0)).thenReturn(newRows);
 
-    final ImmutableSet<Tag> tags = service.getAll(4, 0);
+    final ImmutableSet<Tag> tags = service.list(4, 0);
     assertThat(tags).isNotNull().hasSize(4);
 
     verify(dao, times(1)).findAll(4, 0);

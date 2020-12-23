@@ -51,7 +51,7 @@ public class SourceDaoTest {
     final int rowsBefore = sourceDao.count();
 
     final SourceRow newRow = newSourceRow();
-    sourceDao.insert(newRow);
+    sourceDao.upsert(newRow);
 
     final int rowsAfter = sourceDao.count();
     assertThat(rowsAfter).isEqualTo(rowsBefore + 1);
@@ -60,7 +60,7 @@ public class SourceDaoTest {
   @Test
   public void testExists() {
     final SourceRow newRow = newSourceRow();
-    sourceDao.insert(newRow);
+    sourceDao.upsert(newRow);
 
     final boolean exists = sourceDao.exists(newRow.getName());
     assertThat(exists).isTrue();
@@ -69,7 +69,7 @@ public class SourceDaoTest {
   @Test
   public void testFindBy_uuid() {
     final SourceRow newRow = newSourceRow();
-    sourceDao.insert(newRow);
+    sourceDao.upsert(newRow);
 
     final Optional<SourceRow> row = sourceDao.findBy(newRow.getUuid());
     assertThat(row).isPresent();
@@ -84,7 +84,7 @@ public class SourceDaoTest {
   @Test
   public void testFindBy_name() {
     final SourceRow newRow = newSourceRow();
-    sourceDao.insert(newRow);
+    sourceDao.upsert(newRow);
 
     final Optional<SourceRow> row = sourceDao.findBy(newRow.getName());
     assertThat(row).isPresent();
@@ -99,7 +99,7 @@ public class SourceDaoTest {
   @Test
   public void testFindAll() {
     final List<SourceRow> newRows = newSourceRows(4);
-    newRows.forEach(newRow -> sourceDao.insert(newRow));
+    newRows.forEach(newRow -> sourceDao.upsert(newRow));
 
     final List<SourceRow> rows = sourceDao.findAll(4, 0);
     assertThat(rows).isNotNull().hasSize(4);

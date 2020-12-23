@@ -110,7 +110,7 @@ public class DatasetDaoTest {
     namespaceDao.insert(namespaceRow);
 
     sourceRow = newSourceRow();
-    sourceDao.insert(sourceRow);
+    sourceDao.upsert(sourceRow);
 
     tagRows = newTagRows(2);
     tagRows.forEach(tagRow -> tagDao.insert(tagRow));
@@ -164,7 +164,7 @@ public class DatasetDaoTest {
 
     // Modified
     final Instant lastModifiedAt = newTimestamp();
-    datasetDao.updateLastModifedAt(Lists.newArrayList(newRow.getUuid()), lastModifiedAt);
+    datasetDao.updateLastModifiedAt(Lists.newArrayList(newRow.getUuid()), lastModifiedAt);
 
     final ExtendedDatasetRow row = datasetDao.findBy(newRow.getUuid()).get();
     assertThat(row.getLastModifiedAt()).isPresent().hasValue(lastModifiedAt);

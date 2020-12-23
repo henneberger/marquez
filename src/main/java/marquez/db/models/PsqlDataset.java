@@ -1,4 +1,4 @@
-package marquez.api;
+package marquez.db.models;
 
 import lombok.AllArgsConstructor;
 import org.postgresql.util.PGobject;

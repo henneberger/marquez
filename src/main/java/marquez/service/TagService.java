@@ -31,7 +31,7 @@ import marquez.service.models.Tag;
 import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 
 @Slf4j
-public class TagService {
+public class TagService implements ServiceMetrics {
   private final TagDao dao;
 
   public TagService(@NonNull final TagDao dao) {
@@ -76,7 +76,7 @@ public class TagService {
     }
   }
 
-  public ImmutableSet<Tag> getAll(int limit, int offset) throws MarquezServiceException {
+  public ImmutableSet<Tag> list(int limit, int offset) throws MarquezServiceException {
     checkArgument(limit >= 0, "limit must be >= 0");
     checkArgument(offset >= 0, "offset must be >= 0");
     try {

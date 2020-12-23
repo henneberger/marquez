@@ -14,18 +14,22 @@
 
 package marquez.db;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import marquez.common.models.SourceName;
 import marquez.db.mappers.SourceRowMapper;
 import marquez.db.models.SourceRow;
+import marquez.service.models.SourceMeta;
+import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 @RegisterRowMapper(SourceRowMapper.class)
-public interface SourceDao {
+public interface SourceDao extends SqlObject {
   @SqlUpdate(
       "INSERT INTO sources ("
           + "uuid, "
@@ -43,7 +47,7 @@ public interface SourceDao {
           + ":name, "
           + ":connectionUrl, "
           + ":description)")
-  void insert(@BindBean SourceRow row);
+  void upsert(@BindBean SourceRow row);
 
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM sources WHERE name = :name)")
   boolean exists(String name);
@@ -59,4 +63,42 @@ public interface SourceDao {
 
   @SqlQuery("SELECT COUNT(*) FROM sources")
   int count();
+
+  default Object upsert(SourceName name, SourceMeta meta) {
+    return withHandle(
+      handle -> {
+        String upsert =
+            "INSERT INTO sources ("
+            + "type, "
+            + "created_at, "
+            + "updated_at, "
+            + "name, "
+            + "connection_url, "
+            + "description"
+            + ") VALUES ("
+            + ":type, "
+            + ":createdAt, "
+            + ":updatedAt, "
+            + ":name, "
+            + ":connectionUrl, "
+            + ":description) ON CONFLICT(name) DO"
+            + " UPDATE SET "
+            + "type = :type"
+            + ", updated_at = :updatedAt"
+            + ", name = :name"
+            + ", connection_url = :connectionUrl";
+        if (meta.getDescription() != null) {
+          upsert += ", description = :description";
+        }
+        upsert += " RETURNING uuid";
+        return handle
+            .createQuery(upsert)
+            .bind("name", name.getValue())
+            .bind("createdAt", Instant.now())
+            .bind("updatedAt", Instant.now())
+            .bindBean(meta)
+            .mapTo(UUID.class)
+            .one();
+      });
+  }
 }

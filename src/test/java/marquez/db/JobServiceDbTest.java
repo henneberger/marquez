@@ -134,7 +134,7 @@ public class JobServiceDbTest {
     namespaceDao.insert(namespaceRow);
 
     sourceRow = newSourceRow();
-    sourceDao.insert(sourceRow);
+    sourceDao.upsert(sourceRow);
 
     tagRows = newTagRows(2);
     tagRows.forEach(tagRow -> tagDao.insert(tagRow));
@@ -236,9 +236,10 @@ public class JobServiceDbTest {
     assertThat(jobInputUpdateArg.getAllValues().get(1).getInputs())
         .isEqualTo(
             ImmutableList.of(
-                new RunInput(
-                    new DatasetVersionId(
-                        NAMESPACE_NAME, in_dsn, run_row.get().getInputVersionUuids().get(0)))));
+                RunInput.builder()
+                .datasetVersionId(new DatasetVersionId(
+                    NAMESPACE_NAME, in_dsn, run_row.get().getInputVersionUuids().get(0)))
+                .build()));
   }
 
   @Test

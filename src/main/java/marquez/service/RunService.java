@@ -50,7 +50,7 @@ import marquez.service.models.Run;
 import marquez.service.models.RunMeta;
 
 @Slf4j
-public class RunService {
+public class RunService implements ServiceMetrics {
   private final JobVersionDao jobVersionDao;
   private final DatasetDao datasetDao;
   private final RunArgsDao runArgsDao;
@@ -81,6 +81,7 @@ public class RunService {
       throws MarquezServiceException {
     log.info("Creating run for job '{}'...", jobName.getValue());
 
+    //test out updated_at
     final JobVersionRow versionRow =
         jobVersionDao.findLatest(namespaceName.getValue(), jobName.getValue()).get();
     final RunArgsRow runArgsRow = getOrCreateRunArgsRow(runMeta);
@@ -90,7 +91,7 @@ public class RunService {
 
     final RunRow newRunRow =
         createRunRow(versionRow.getUuid(), runArgsRow.getUuid(), inputVersionUuids, runMeta);
-
+//Move to listener?
     notify(
         new JobInputUpdate(
             RunId.of(newRunRow.getUuid()),
@@ -225,7 +226,7 @@ public class RunService {
         newRunState.isComplete());
     final RunState oldRunState = runRow.getCurrentRunState().map(RunState::valueOf).orElse(null);
     notify(new RunTransition(runId, oldRunState, newRunState));
-    JobMetrics.emitRunStateCounterMetric(newRunState);
+    ServiceMetrics.emitRunStateCounterMetric(newRunState);
   }
 
   public void updateRunInputDatasets(

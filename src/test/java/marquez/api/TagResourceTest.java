@@ -47,12 +47,14 @@ public class TagResourceTest {
 
   @Before
   public void setUp() {
-    resource = new TagResource(service);
+    MockServiceFactory sf = new MockServiceFactory();
+    service = sf.getTagService();
+    resource = new TagResource(sf);
   }
 
   @Test
   public void testList() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(TAGS);
+    when(service.list(4, 0)).thenReturn(TAGS);
 
     final Response response = resource.list(4, 0);
     assertThat(response.getStatus()).isEqualTo(200);
@@ -61,7 +63,7 @@ public class TagResourceTest {
 
   @Test
   public void testList_empty() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(ImmutableSet.of());
+    when(service.list(4, 0)).thenReturn(ImmutableSet.of());
 
     final Response response = resource.list(4, 0);
     assertThat(response.getStatus()).isEqualTo(200);

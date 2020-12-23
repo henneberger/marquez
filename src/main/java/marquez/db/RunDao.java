@@ -65,8 +65,8 @@ public interface RunDao extends SqlObject {
                 .bindBean(row)
                 .execute());
     // Input versions
-//    row.getInputVersionUuids()
-//        .forEach(inputVersionUuid -> updateInputVersions(row.getUuid(), inputVersionUuid));
+    row.getInputVersionUuids()
+        .forEach(inputVersionUuid -> updateInputVersions(row.getUuid(), inputVersionUuid));
     // Latest run
     final Instant updateAt = row.getCreatedAt();
     createJobVersionDao().updateLatestRun(row.getJobVersionUuid(), updateAt, row.getUuid());
@@ -128,7 +128,7 @@ public interface RunDao extends SqlObject {
           + "      FROM runs_input_mapping "
           + "      WHERE run_uuid = r.uuid) AS input_version_uuids "
           + "FROM runs AS r "
-          + "INNER JOIN run_args AS ra"
+          + "LEFT JOIN run_args AS ra"
           + "  ON (ra.uuid = r.run_args_uuid) "
           + "LEFT JOIN run_states AS rs_s"
           + "  ON (rs_s.uuid = r.start_run_state_uuid) "

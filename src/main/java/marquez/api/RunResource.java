@@ -20,18 +20,16 @@ import marquez.api.exceptions.RunNotFoundException;
 import marquez.common.Utils;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
-import marquez.service.RunService;
+import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Run;
 
-public class RunResource {
-
+public class RunResource extends AbstractResource {
   private final RunId runId;
-  private final RunService runService;
 
-  public RunResource(RunId runId, RunService runService) {
+  public RunResource(RunId runId, ServiceFactory serviceFactory) {
+    super(serviceFactory);
     this.runId = runId;
-    this.runService = runService;
   }
 
   @Timed
@@ -40,8 +38,8 @@ public class RunResource {
   @GET
   @Path("/")
   @Produces(APPLICATION_JSON)
-  public Response getRun() throws MarquezServiceException {
-    final Run run = runService.getRun(runId).orElseThrow(() -> new RunNotFoundException(runId));
+  public Response get() throws MarquezServiceException {
+    final Run run = serviceFactory.getRunService().getRun(runId).orElseThrow(() -> new RunNotFoundException(runId));
     return Response.ok(run).build();
   }
 
@@ -73,7 +71,8 @@ public class RunResource {
   @POST
   @Path("fail")
   @Produces(APPLICATION_JSON)
-  public Response markRunAsFailed(@QueryParam("at") String atAsIso) throws MarquezServiceException {
+  public Response markRunAsFailed(@QueryParam("at") String atAsIso)
+      throws MarquezServiceException {
     return markRunAs(FAILED, atAsIso);
   }
 
@@ -91,7 +90,7 @@ public class RunResource {
   Response markRunAs(@NonNull RunState runState, @QueryParam("at") String atAsIso)
       throws MarquezServiceException {
 
-    runService.markRunAs(runId, runState, Utils.toInstant(atAsIso));
-    return getRun();
+    serviceFactory.getRunService().markRunAs(runId, runState, Utils.toInstant(atAsIso));
+    return get();
   }
 }

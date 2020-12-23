@@ -35,17 +35,16 @@ import lombok.NonNull;
 import lombok.Value;
 import marquez.api.exceptions.NamespaceNotFoundException;
 import marquez.common.models.NamespaceName;
-import marquez.service.NamespaceService;
+import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Namespace;
 import marquez.service.models.NamespaceMeta;
 
 @Path("/api/v1")
-public class NamespaceResource {
-  private final NamespaceService service;
+public class NamespaceResource extends AbstractResource {
 
-  public NamespaceResource(@NonNull final NamespaceService service) {
-    this.service = service;
+  public NamespaceResource(ServiceFactory serviceFactory) {
+    super(serviceFactory);
   }
 
   @Timed
@@ -58,7 +57,7 @@ public class NamespaceResource {
   public Response createOrUpdate(
       @PathParam("namespace") NamespaceName name, @Valid NamespaceMeta meta)
       throws MarquezServiceException {
-    final Namespace namespace = service.createOrUpdate(name, meta);
+    final Namespace namespace = serviceFactory.getNamespaceService().createOrUpdate(name, meta);
     return Response.ok(namespace).build();
   }
 
@@ -70,7 +69,7 @@ public class NamespaceResource {
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("namespace") NamespaceName name) throws MarquezServiceException {
     final Namespace namespace =
-        service.get(name).orElseThrow(() -> new NamespaceNotFoundException(name));
+        serviceFactory.getNamespaceService().get(name).orElseThrow(() -> new NamespaceNotFoundException(name));
     return Response.ok(namespace).build();
   }
 
@@ -84,7 +83,7 @@ public class NamespaceResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final ImmutableList<Namespace> namespaces = service.getAll(limit, offset);
+    final ImmutableList<Namespace> namespaces = serviceFactory.getNamespaceService().getAll(limit, offset);
     return Response.ok(new Namespaces(namespaces)).build();
   }
 

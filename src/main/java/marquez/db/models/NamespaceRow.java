@@ -20,7 +20,6 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 

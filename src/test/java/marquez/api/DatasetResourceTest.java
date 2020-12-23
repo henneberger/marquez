@@ -33,7 +33,6 @@ import marquez.common.models.NamespaceName;
 import marquez.common.models.RunId;
 import marquez.common.models.TagName;
 import marquez.service.DatasetService;
-import marquez.service.JobService;
 import marquez.service.NamespaceService;
 import marquez.service.RunService;
 import marquez.service.TagService;
@@ -45,7 +44,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -67,17 +65,24 @@ public class DatasetResourceTest {
 
   @Rule public MockitoRule rule = MockitoJUnit.rule();
 
-  @Mock private NamespaceService namespaceService;
-  @Mock private DatasetService datasetService;
-  @Mock private JobService jobService;
-  @Mock private TagService tagService;
-  @Mock private RunService runService;
+  private NamespaceService namespaceService;
+  private DatasetService datasetService;
+  private TagService tagService;
+  private RunService runService;
   private DatasetResource datasetResource;
+  private TagResource tagResource;
 
   @Before
   public void setUp() {
+    MockServiceFactory mockServiceFactory = MockServiceFactory.builder().build();
     datasetResource =
-        spy(new DatasetResource(namespaceService, datasetService, tagService, runService));
+        spy(new DatasetResource(mockServiceFactory));
+    tagResource =
+        spy(new TagResource(mockServiceFactory));
+    namespaceService = mockServiceFactory.getNamespaceService();
+    datasetService = mockServiceFactory.getDatasetService();
+    tagService = mockServiceFactory.getTagService();
+    runService = mockServiceFactory.getRunService();
   }
 
   @Test
@@ -178,7 +183,7 @@ public class DatasetResourceTest {
     final DbTable dbTable = tagWith(TAG_NAME, newDbTableWith(DB_TABLE_ID));
     when(datasetService.tagWith(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME)).thenReturn(dbTable);
 
-    final Response response = datasetResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME);
+    final Response response = tagResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME);
     assertThat(response.getStatus()).isEqualTo(200);
 
     final Dataset dataset = (Dataset) response.getEntity();
@@ -191,7 +196,7 @@ public class DatasetResourceTest {
     when(namespaceService.exists(NAMESPACE_NAME)).thenReturn(false);
 
     assertThatExceptionOfType(NamespaceNotFoundException.class)
-        .isThrownBy(() -> datasetResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
+        .isThrownBy(() -> tagResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", NAMESPACE_NAME.getValue()));
   }
 
@@ -201,7 +206,7 @@ public class DatasetResourceTest {
     when(datasetService.exists(NAMESPACE_NAME, DB_TABLE_NAME)).thenReturn(false);
 
     assertThatExceptionOfType(DatasetNotFoundException.class)
-        .isThrownBy(() -> datasetResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
+        .isThrownBy(() -> tagResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", DB_TABLE_NAME.getValue()));
   }
 
@@ -212,7 +217,7 @@ public class DatasetResourceTest {
     when(tagService.exists(TAG_NAME)).thenReturn(false);
 
     assertThatExceptionOfType(TagNotFoundException.class)
-        .isThrownBy(() -> datasetResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
+        .isThrownBy(() -> tagResource.tag(NAMESPACE_NAME, DB_TABLE_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", TAG_NAME.getValue()));
   }
 
@@ -228,7 +233,7 @@ public class DatasetResourceTest {
         .thenReturn(dbTable);
 
     final Response response =
-        datasetResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME);
+        tagResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME);
     assertThat(response.getStatus()).isEqualTo(200);
 
     final Dataset dataset = (Dataset) response.getEntity();
@@ -244,7 +249,7 @@ public class DatasetResourceTest {
 
     assertThatExceptionOfType(NamespaceNotFoundException.class)
         .isThrownBy(
-            () -> datasetResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
+            () -> tagResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", NAMESPACE_NAME.getValue()));
   }
 
@@ -255,7 +260,7 @@ public class DatasetResourceTest {
 
     assertThatExceptionOfType(DatasetNotFoundException.class)
         .isThrownBy(
-            () -> datasetResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
+            () -> tagResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", DB_TABLE_NAME.getValue()));
   }
 
@@ -268,7 +273,7 @@ public class DatasetResourceTest {
 
     assertThatExceptionOfType(FieldNotFoundException.class)
         .isThrownBy(
-            () -> datasetResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
+            () -> tagResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", DB_FIELD_NAME.getValue()));
   }
 
@@ -281,7 +286,7 @@ public class DatasetResourceTest {
 
     assertThatExceptionOfType(TagNotFoundException.class)
         .isThrownBy(
-            () -> datasetResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
+            () -> tagResource.tagField(NAMESPACE_NAME, DB_TABLE_NAME, DB_FIELD_NAME, TAG_NAME))
         .withMessageContaining(String.format("'%s' not found", TAG_NAME.getValue()));
   }
 

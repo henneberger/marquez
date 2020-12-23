@@ -41,19 +41,18 @@ public class SourceService implements ServiceMetrics {
     this.sourceDao = sourceDao;
   }
 
-  public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta)
-      throws MarquezServiceException {
-    UUID uuid = sourceDao.upsert(Mapper.toSourceRow(name, meta));
+  public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta) {
+    sourceDao.upsert(Mapper.toSourceRow(name, meta));
     log.info("Successfully created source '{}' with meta: {}", name.getValue(), meta);
     sources.inc();
     return get(name).get();
   }
 
-  public Optional<Source> get(@NonNull SourceName name) throws MarquezServiceException {
+  public Optional<Source> get(@NonNull SourceName name) {
     return sourceDao.findBy(name.getValue()).map(SourceService::toSource);
   }
 
-  public ImmutableList<Source> list(int limit, int offset) throws MarquezServiceException {
+  public ImmutableList<Source> list(int limit, int offset) {
     checkArgument(limit >= 0, "limit must be >= 0");
     checkArgument(offset >= 0, "offset must be >= 0");
     final ImmutableList.Builder<Source> sources = ImmutableList.builder();

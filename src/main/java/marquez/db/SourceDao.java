@@ -64,9 +64,6 @@ public interface SourceDao extends SqlObject {
         });
   }
 
-  @SqlQuery("SELECT EXISTS (SELECT 1 FROM sources WHERE name = :name)")
-  boolean exists(String name);
-
   @SqlQuery("SELECT * FROM sources WHERE uuid = :rowUuid")
   Optional<SourceRow> findBy(UUID rowUuid);
 

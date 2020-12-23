@@ -59,15 +59,6 @@ public class SourceDaoTest {
   }
 
   @Test
-  public void testExists() {
-    final SourceRow newRow = newSourceRow();
-    sourceDao.upsert(newRow);
-
-    final boolean exists = sourceDao.exists(newRow.getName());
-    assertThat(exists).isTrue();
-  }
-
-  @Test
   public void testFindBy_uuid() {
     final SourceRow newRow = newSourceRow();
     sourceDao.upsert(newRow);

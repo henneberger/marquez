@@ -18,20 +18,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import marquez.common.models.SourceName;
 import marquez.db.mappers.SourceRowMapper;
 import marquez.db.models.SourceRow;
-import marquez.service.models.SourceMeta;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
-import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
-import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 @RegisterRowMapper(SourceRowMapper.class)
 public interface SourceDao extends SqlObject {
 
-  default Object upsert(SourceRow sourceRow) {
+  default UUID upsert(SourceRow sourceRow) {
     return withHandle(
         handle -> {
           String upsert =

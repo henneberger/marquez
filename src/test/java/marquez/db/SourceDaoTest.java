@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import marquez.DataAccessTests;
 import marquez.IntegrationTests;
 import marquez.JdbiRuleInit;
@@ -51,8 +52,8 @@ public class SourceDaoTest {
     final int rowsBefore = sourceDao.count();
 
     final SourceRow newRow = newSourceRow();
-    sourceDao.upsert(newRow);
-
+    UUID uuid = sourceDao.upsert(newRow);
+    assertThat(uuid).isNotNull();
     final int rowsAfter = sourceDao.count();
     assertThat(rowsAfter).isEqualTo(rowsBefore + 1);
   }

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import lombok.NonNull;
 import marquez.Generator;
 import marquez.common.Utils;
 import marquez.common.models.DatasetName;
@@ -98,7 +99,7 @@ public final class ModelGenerator extends Generator {
   }
 
   public static DatasetRow newDatasetRowWith(
-      final UUID namespaceUuid, final UUID sourceUuid, final List<UUID> tagUuids) {
+      @NonNull final UUID namespaceUuid, @NonNull final UUID sourceUuid, final List<UUID> tagUuids) {
     return newDatasetRowWith(namespaceUuid, sourceUuid, tagUuids, newDatasetName());
   }
 

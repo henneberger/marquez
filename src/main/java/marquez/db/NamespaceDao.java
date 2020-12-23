@@ -14,6 +14,9 @@
 
 package marquez.db;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -24,14 +27,17 @@ import marquez.db.models.NamespaceOwnershipRow;
 import marquez.db.models.NamespaceRow;
 import marquez.db.models.OwnerRow;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
+import org.jdbi.v3.sqlobject.SqlObject;
+import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.statement.MapTo;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 @RegisterRowMapper(NamespaceRowMapper.class)
-public interface NamespaceDao {
+public interface NamespaceDao extends SqlObject {
   @CreateSqlObject
   OwnerDao createOwnerDao();
 
@@ -53,10 +59,20 @@ public interface NamespaceDao {
     createNamespaceOwnershipDao().insert(ownershipRow);
   }
 
-  @SqlUpdate(
-      "INSERT INTO namespaces (uuid, created_at, updated_at, name, description, current_owner_name) "
-          + "VALUES (:uuid, :createdAt, :updatedAt, :name, :description, :currentOwnerName)")
-  void insert(@BindBean NamespaceRow row);
+  default UUID insert(NamespaceRow row) {
+    return withHandle(
+        handle -> {
+          String upsert =
+              "INSERT INTO namespaces (created_at, updated_at, name, description, current_owner_name) "
+                  + "VALUES (:createdAt, :updatedAt, :name, :description, :currentOwnerName) ON CONFLICT(name)"
+                  + " DO UPDATE SET name = :name RETURNING uuid";
+          return handle
+              .createQuery(upsert)
+              .bindBean(row)
+              .mapTo(UUID.class)
+              .one();
+        });
+  }
 
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM namespaces WHERE name = :name)")
   boolean exists(String name);

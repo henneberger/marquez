@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import marquez.common.models.SourceName;
@@ -42,7 +43,7 @@ public class SourceService implements ServiceMetrics {
 
   public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta)
       throws MarquezServiceException {
-    sourceDao.upsert(Mapper.toSourceRow(name, meta));
+    UUID uuid = sourceDao.upsert(Mapper.toSourceRow(name, meta));
     log.info("Successfully created source '{}' with meta: {}", name.getValue(), meta);
     sources.inc();
     return get(name).get();

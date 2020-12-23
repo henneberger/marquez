@@ -35,14 +35,6 @@ import org.jdbi.v3.sqlobject.transaction.Transaction;
 public interface DatasetDao extends SqlObject {
   @Transaction
   default void insert(DatasetRow row) {
-    /**
-     * INSERT INTO customers (name, email)
-     * VALUES('Microsoft','hotline@microsoft.com')
-     * ON CONFLICT (name)
-     * DO
-     *    UPDATE SET email = EXCLUDED.email || ';' || customers.email;
-     */
-
     withHandle(
         handle ->
             handle

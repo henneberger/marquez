@@ -53,7 +53,7 @@ import marquez.db.models.SourceRow;
 import marquez.db.models.TagRow;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -80,6 +80,8 @@ public class DatasetDaoTest {
           DatasetRow::getLastModifiedAt,
           DatasetRow::getDescription,
           DatasetRow::getCurrentVersionUuid);
+  private UUID sourceUuid;
+  private UUID namespaceUuid;
 
   private static void assertEquals(DatasetRow actual, DatasetRow expected) {
     for (Function<DatasetRow, ? extends Object> getter : DATASET_ROW_GETTERS) {
@@ -97,8 +99,8 @@ public class DatasetDaoTest {
   private static SourceRow sourceRow;
   private static List<TagRow> tagRows;
 
-  @BeforeClass
-  public static void setUpOnce() {
+  @Before
+  public void before() {
     final Jdbi jdbi = dbRule.getJdbi();
     namespaceDao = jdbi.onDemand(NamespaceDao.class);
     sourceDao = jdbi.onDemand(SourceDao.class);
@@ -107,10 +109,10 @@ public class DatasetDaoTest {
     tagDao = jdbi.onDemand(TagDao.class);
 
     namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
-    namespaceDao.insert(namespaceRow);
+    namespaceUuid = namespaceDao.insert(namespaceRow);
 
     sourceRow = newSourceRow();
-    sourceDao.upsert(sourceRow);
+    sourceUuid = sourceDao.upsert(sourceRow);
 
     tagRows = newTagRows(2);
     tagRows.forEach(tagRow -> tagDao.insert(tagRow));
@@ -121,7 +123,7 @@ public class DatasetDaoTest {
     final int rowsBefore = datasetDao.count();
 
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final int rowsAfter = datasetDao.count();
@@ -131,7 +133,7 @@ public class DatasetDaoTest {
   @Test
   public void testExists() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final boolean exists = datasetDao.exists(NAMESPACE_NAME.getValue(), newRow.getName());
@@ -141,7 +143,7 @@ public class DatasetDaoTest {
   @Test
   public void testUpdateTags() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     // Tag
@@ -159,7 +161,7 @@ public class DatasetDaoTest {
   @Test
   public void testUpdateLastModifiedAt() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     // Modified
@@ -173,7 +175,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindBy() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final Optional<ExtendedDatasetRow> row = datasetDao.findBy(newRow.getUuid());
@@ -192,7 +194,7 @@ public class DatasetDaoTest {
   @Test
   public void testFind() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final Optional<ExtendedDatasetRow> row =
@@ -215,7 +217,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAllIn_uuidList() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<UUID> newRowUuids =
@@ -231,7 +233,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAllIn_stringList() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<String> newDatasetNames =
@@ -255,7 +257,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAll() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<ExtendedDatasetRow> rows = datasetDao.findAll(NAMESPACE_NAME.getValue(), 4, 0);
@@ -265,7 +267,7 @@ public class DatasetDaoTest {
   @Test
   public void testDatasetVersions() {
     final DatasetRow ds =
-        newDatasetRowWith(namespaceRow.getUuid(), sourceRow.getUuid(), toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
     datasetDao.insert(ds);
 
     DatasetVersionRow dsv =

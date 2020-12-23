@@ -39,23 +39,25 @@ import marquez.common.models.DatasetName;
 import marquez.common.models.NamespaceName;
 import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
+import marquez.service.models.Namespace;
+import marquez.service.models.Source;
 import marquez.service.models.Version;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}
 
-  public static List<NamespaceRow> newNamespaceRows(int limit) {
+  public static List<Namespace> newNamespaceRows(int limit) {
     return Stream.generate(() -> newNamespaceRow()).limit(limit).collect(toImmutableList());
   }
 
-  public static NamespaceRow newNamespaceRow() {
+  public static Namespace newNamespaceRow() {
     return newNamespaceRowWith(newNamespaceName());
   }
 
-  public static NamespaceRow newNamespaceRowWith(final NamespaceName name) {
+  public static Namespace newNamespaceRowWith(final NamespaceName name) {
     final Instant now = newTimestamp();
-    return new NamespaceRow(
-        newRowUuid(), now, now, name.getValue(), newDescription(), newOwnerName().getValue());
+    return new Namespace(
+        newRowUuid(), name, now, now, newOwnerName(), newDescription());
   }
 
   public static List<SourceRow> newSourceRows(final int limit) {
@@ -70,7 +72,6 @@ public final class ModelGenerator extends Generator {
     final Instant now = newTimestamp();
     final SourceType type = newSourceType();
     return new SourceRow(
-        newRowUuid(),
         type.name(),
         now,
         now,
@@ -79,14 +80,23 @@ public final class ModelGenerator extends Generator {
         newDescription());
   }
 
-  public static List<DatasetRow> newDatasetRows(final int limit) {
-    return Stream.generate(() -> newDatasetRow()).limit(limit).collect(toImmutableList());
+  public static Source newSourceWith(final SourceName name) {
+    final Instant now = newTimestamp();
+    final SourceType type = newSourceType();
+    return new Source(
+        newRowUuid(),
+        type,
+        name,
+        now,
+        now,
+        newConnectionUrlFor(type),
+        newDescription());
   }
 
-  public static DatasetRow newDatasetRow() {
+  public static DatasetRow newDatasetRowWith(UUID sourceUuid) {
     return newDatasetRowWith(
         newNamespaceRow().getUuid(),
-        newSourceRow().getUuid(),
+        sourceUuid,
         toTagUuids(newTagRows(2)),
         newDatasetName());
   }

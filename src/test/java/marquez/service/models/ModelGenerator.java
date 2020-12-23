@@ -66,7 +66,7 @@ public final class ModelGenerator extends Generator {
 
   public static Namespace newNamespaceWith(final NamespaceName namespaceName) {
     final Instant now = newTimestamp();
-    return new Namespace(namespaceName, now, now, newOwnerName(), newDescription());
+    return new Namespace(null, namespaceName, now, now, newOwnerName(), newDescription());
   }
 
   public static Source newSource() {
@@ -76,7 +76,7 @@ public final class ModelGenerator extends Generator {
   public static Source newSourceWith(final SourceName sourceName) {
     final Instant now = newTimestamp();
     final SourceType sourceType = newSourceType();
-    return new Source(
+    return new Source(UUID.randomUUID(),
         sourceType, sourceName, now, now, newConnectionUrlFor(sourceType), newDescription());
   }
 

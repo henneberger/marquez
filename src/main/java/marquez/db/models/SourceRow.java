@@ -16,7 +16,6 @@ package marquez.db.models;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +26,6 @@ import lombok.Value;
 @Builder
 @AllArgsConstructor
 public class SourceRow {
-  @NonNull UUID uuid;
   @NonNull String type;
   @NonNull Instant createdAt;
   @NonNull Instant updatedAt;

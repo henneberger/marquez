@@ -26,6 +26,7 @@ import static marquez.db.models.ModelGenerator.newDatasetVersionRowWith;
 import static marquez.db.models.ModelGenerator.newNamespaceRowWith;
 import static marquez.db.models.ModelGenerator.newRowUuid;
 import static marquez.db.models.ModelGenerator.newSourceRowWith;
+import static marquez.db.models.ModelGenerator.newSourceWith;
 import static marquez.service.models.ModelGenerator.newVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -55,14 +56,14 @@ import marquez.db.TagDao;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
-import marquez.db.models.NamespaceRow;
-import marquez.db.models.SourceRow;
 import marquez.db.models.TagRow;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;
 import marquez.service.models.DbTable;
 import marquez.service.models.DbTableMeta;
+import marquez.service.models.Namespace;
+import marquez.service.models.Source;
 import marquez.service.models.Version;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,7 +83,6 @@ public class DatasetServiceTest {
   private static final ImmutableList<DatasetFieldRow> NO_FIELD_ROWS = ImmutableList.of();
 
   // DB TABLE DATASET
-  // DB TABLE DATASET
   private static final DatasetId DB_TABLE_ID = newDatasetIdWith(NAMESPACE_NAME);
   private static final DatasetName DB_TABLE_NAME = DB_TABLE_ID.getName();
   private static final DatasetName DB_TABLE_PHYSICAL_NAME = newDatasetName();
@@ -90,8 +90,8 @@ public class DatasetServiceTest {
   private static final String DB_TABLE_DESCRIPTION = newDescription();
 
   // DB TABLE ROW
-  private static final NamespaceRow NAMESPACE_ROW = newNamespaceRowWith(NAMESPACE_NAME);
-  private static final SourceRow SOURCE_ROW = newSourceRowWith(DB_TABLE_SOURCE_NAME);
+  private static final Namespace NAMESPACE_ROW = newNamespaceRowWith(NAMESPACE_NAME);
+  private static final Source SOURCE = newSourceWith(DB_TABLE_SOURCE_NAME);
   private static final ExtendedDatasetRow DATASET_ROW =
       new ExtendedDatasetRow(
           newRowUuid(),
@@ -100,7 +100,7 @@ public class DatasetServiceTest {
           NOW,
           NAMESPACE_ROW.getUuid(),
           NAMESPACE_NAME.getValue(),
-          SOURCE_ROW.getUuid(),
+          SOURCE.getUuid(),
           DB_TABLE_SOURCE_NAME.getValue(),
           DB_TABLE_NAME.getValue(),
           DB_TABLE_PHYSICAL_NAME.getValue(),
@@ -130,11 +130,10 @@ public class DatasetServiceTest {
   public void testCreateOrUpdate() throws MarquezServiceException {
     when(datasetDao.exists(NAMESPACE_NAME.getValue(), DB_TABLE_NAME.getValue())).thenReturn(false);
 
-    final NamespaceRow namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
+    final Namespace namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
     when(namespaceDao.findBy(NAMESPACE_NAME.getValue())).thenReturn(Optional.of(namespaceRow));
 
-    final SourceRow sourceRow = newSourceRowWith(DB_TABLE_SOURCE_NAME);
-    when(sourceDao.findBy(DB_TABLE_SOURCE_NAME.getValue())).thenReturn(Optional.of(sourceRow));
+    when(sourceDao.findBy(DB_TABLE_SOURCE_NAME.getValue())).thenReturn(Optional.of(SOURCE));
 
     when(datasetDao.find(NAMESPACE_NAME.getValue(), DB_TABLE_NAME.getValue()))
         .thenReturn(Optional.of(DATASET_ROW));

@@ -11,6 +11,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.Response;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.PsqlDataset;
 import marquez.common.models.DatasetName;
 import marquez.common.models.DatasetType;
@@ -29,14 +30,15 @@ import marquez.db.models.ExtendedDatasetRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.db.models.JobVersionRow;
-import marquez.db.models.NamespaceRow;
 import marquez.db.models.RunRow;
 import marquez.db.models.SourceRow;
 import marquez.service.RunTransitionListener;
 import marquez.service.RunTransitionListener.JobInputUpdate;
 import marquez.service.RunTransitionListener.RunInput;
 import marquez.service.ServiceFactory;
+import marquez.service.models.Namespace;
 import marquez.service.models.RunMeta;
+import marquez.service.models.Source;
 
 @Slf4j
 public class OpenLineageDao {
@@ -94,33 +96,17 @@ public class OpenLineageDao {
 
   public Object marquezModel(LineageEvent event) {
     UUID runUuid = UUID.randomUUID();
-    Optional<NamespaceRow> ns = sf.getNamespaceDao().findBy(event.job.namespace);
-    UUID namespaceId;
-    if (ns.isEmpty()) {
-      namespaceId = UUID.randomUUID();
-      sf.getNamespaceDao().insert(NamespaceRow.builder()
-          .name(event.job.namespace)
-          .uuid(namespaceId)
-          .build());
-    } else {
-      namespaceId = ns.get().getUuid();
-    }
+    Namespace namespace = sf.getNamespaceDao().upsert(UpsertNamespaceFragment.build(event.job.namespace));
 
-    UUID sourceUuid = UUID.randomUUID();
     String sourceName = UUID.randomUUID().toString();
-    Optional<SourceRow> source = sf.getSourceDao().findBy(sourceName);
-    if (source.isEmpty()) {
-//      sf.getSourceDao().upsert(SourceRow.builder()
-//          .type(SourceType.POSTGRESQL.name())
-//          .createdAt(event.transitionTime.toInstant())
-//          .updatedAt(event.transitionTime.toInstant())
-//          .name(sourceName) //cannot be blank :(
-//          .connectionUrl("http://"+UUID.randomUUID().toString())
-//          .uuid(sourceUuid)
-//          .build());
-    } else {
-      sourceUuid = source.get().getUuid();
-    }
+    Source source = sf.getSourceDao().upsert(SourceRow.builder()
+        .type(SourceType.POSTGRESQL.name())
+        .createdAt(event.transitionTime.toInstant())
+        .updatedAt(event.transitionTime.toInstant())
+        .name(sourceName)
+        .connectionUrl("http://"+UUID.randomUUID().toString())
+        .build());
+
     List<UUID> inputs = new ArrayList<>();
     List<RunInput> runInputs = new ArrayList<>();
     if (event.inputs != null) {
@@ -133,13 +119,13 @@ public class OpenLineageDao {
               .createdAt(event.transitionTime.toInstant())
               .updatedAt(event.transitionTime.toInstant())
               .name(in.name)
-              .namespaceUuid(namespaceId)
+              .namespaceUuid(namespace.getUuid())
               .uuid(inUuid)
               .physicalName(in.name)
               .tagUuids(ImmutableList.of())
               .type(DatasetType.DB_TABLE.name())
               .currentVersionUuid(inVersion)
-              .sourceUuid(sourceUuid)
+              .sourceUuid(source.getUuid())
               .build()
           );
         } else {
@@ -195,7 +181,7 @@ public class OpenLineageDao {
           .createdAt(event.transitionTime.toInstant())
           .updatedAt(event.transitionTime.toInstant())
           .name(event.job.name)
-          .namespaceUuid(namespaceId)
+          .namespaceUuid(namespace.getUuid())
           .namespaceName(event.job.namespace)
           .type(JobType.BATCH.name())
           .uuid(jobUUid)

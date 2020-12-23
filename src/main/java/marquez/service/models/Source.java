@@ -16,11 +16,13 @@ package marquez.service.models;
 
 import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.Value;
@@ -29,6 +31,10 @@ import marquez.common.models.SourceType;
 
 @Value
 public class Source {
+  @JsonIgnore
+  @NonNull
+  UUID uuid;
+
   @NonNull SourceType type;
 
   @NonNull

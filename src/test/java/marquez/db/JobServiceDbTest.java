@@ -49,9 +49,9 @@ import marquez.common.models.NamespaceName;
 import marquez.common.models.RunId;
 import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
+import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.ExtendedDatasetVersionRow;
 import marquez.db.models.ExtendedRunRow;
-import marquez.db.models.NamespaceRow;
 import marquez.db.models.SourceRow;
 import marquez.db.models.TagRow;
 import marquez.service.DatasetService;
@@ -68,6 +68,7 @@ import marquez.service.models.Dataset;
 import marquez.service.models.DbTableMeta;
 import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
+import marquez.service.models.Namespace;
 import marquez.service.models.Run;
 import marquez.service.models.RunMeta;
 import marquez.service.models.Source;
@@ -97,7 +98,7 @@ public class JobServiceDbTest {
   private static DatasetFieldDao datasetFieldDao;
   private static TagDao tagDao;
 
-  private static NamespaceRow namespaceRow;
+  private static Namespace namespaceRow;
   private static SourceRow sourceRow;
   private static List<TagRow> tagRows;
   private static JobService jobService;
@@ -131,7 +132,7 @@ public class JobServiceDbTest {
     runDao = jdbi.onDemand(RunDao.class);
 
     namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
-    namespaceDao.insert(namespaceRow);
+    namespaceRow = namespaceDao.upsert(UpsertNamespaceFragment.build(namespaceRow));
 
     sourceRow = newSourceRow();
     sourceDao.upsert(sourceRow);

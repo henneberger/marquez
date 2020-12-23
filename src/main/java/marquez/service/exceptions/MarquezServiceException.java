@@ -16,7 +16,7 @@ package marquez.service.exceptions;
 
 import javax.annotation.Nullable;
 import lombok.NoArgsConstructor;
-import marquez.MarquezRuntimeException;
+import marquez.exceptions.MarquezRuntimeException;
 
 @NoArgsConstructor
 public class MarquezServiceException extends MarquezRuntimeException {

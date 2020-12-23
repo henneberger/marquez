@@ -45,7 +45,6 @@ import marquez.common.models.OwnerName;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
 import marquez.common.models.SourceName;
-import marquez.common.models.SourceType;
 import marquez.common.models.TagName;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
@@ -55,13 +54,10 @@ import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.db.models.JobVersionRow;
-import marquez.db.models.NamespaceOwnershipRow;
-import marquez.db.models.NamespaceRow;
 import marquez.db.models.OwnerRow;
 import marquez.db.models.RunArgsRow;
 import marquez.db.models.RunRow;
 import marquez.db.models.RunStateRow;
-import marquez.db.models.SourceRow;
 import marquez.db.models.StreamVersionRow;
 import marquez.db.models.TagRow;
 import marquez.service.models.Dataset;
@@ -74,8 +70,6 @@ import marquez.service.models.Namespace;
 import marquez.service.models.NamespaceMeta;
 import marquez.service.models.Run;
 import marquez.service.models.RunMeta;
-import marquez.service.models.Source;
-import marquez.service.models.SourceMeta;
 import marquez.service.models.Stream;
 import marquez.service.models.StreamMeta;
 import marquez.service.models.Tag;
@@ -84,66 +78,8 @@ import marquez.service.models.Version;
 public final class Mapper {
   private Mapper() {}
 
-  public static Namespace toNamespace(@NonNull final NamespaceRow row) {
-    return new Namespace(
-        NamespaceName.of(row.getName()),
-        row.getCreatedAt(),
-        row.getUpdatedAt(),
-        OwnerName.of(row.getCurrentOwnerName()),
-        row.getDescription().orElse(null));
-  }
-
-  public static List<Namespace> toNamespaces(@NonNull final List<NamespaceRow> rows) {
-    return rows.stream().map(Mapper::toNamespace).collect(toImmutableList());
-  }
-
-  public static NamespaceRow toNamespaceRow(
-      @NonNull final NamespaceName name, @NonNull final NamespaceMeta meta) {
-    final Instant now = newTimestamp();
-    return new NamespaceRow(
-        newRowUuid(),
-        now,
-        now,
-        name.getValue(),
-        meta.getDescription().orElse(null),
-        meta.getOwnerName().getValue());
-  }
-
   public static OwnerRow toOwnerRow(@NonNull final OwnerName name) {
     return new OwnerRow(newRowUuid(), newTimestamp(), name.getValue());
-  }
-
-  public static NamespaceOwnershipRow toNamespaceOwnershipRow(
-      @NonNull final UUID namespaceRowUuid, @NonNull final UUID ownerRowUuid) {
-    return new NamespaceOwnershipRow(
-        newRowUuid(), newTimestamp(), null, namespaceRowUuid, ownerRowUuid);
-  }
-
-  public static Source toSource(@NonNull final SourceRow row) {
-    return new Source(
-        SourceType.valueOf(row.getType()),
-        SourceName.of(row.getName()),
-        row.getCreatedAt(),
-        row.getUpdatedAt(),
-        URI.create(row.getConnectionUrl()),
-        row.getDescription().orElse(null));
-  }
-
-  public static List<Source> toSources(@NonNull final List<SourceRow> rows) {
-    return rows.stream().map(Mapper::toSource).collect(toImmutableList());
-  }
-
-  public static SourceRow toSourceRow(
-      @NonNull final SourceName name, @NonNull final SourceMeta meta) {
-    final Instant now = newTimestamp();
-    return new SourceRow(
-        newRowUuid(),
-        meta.getType().toString(),
-        now,
-        now,
-        name.getValue(),
-        meta.getConnectionUrl().toASCIIString(),
-        meta.getDescription().orElse(null));
   }
 
   public static DatasetId toDatasetId(@NonNull final ExtendedDatasetRow row) {
@@ -322,7 +258,7 @@ public final class Mapper {
   }
 
   public static JobRow toJobRow(
-      @NonNull final NamespaceRow namespace,
+      @NonNull final Namespace namespace,
       @NonNull final JobName name,
       @NonNull final JobMeta meta) {
     final Instant now = Instant.now();
@@ -332,7 +268,7 @@ public final class Mapper {
         now,
         now,
         namespace.getUuid(),
-        namespace.getName(),
+        namespace.getName().getValue(),
         name.getValue(),
         meta.getDescription().orElse(null),
         null);
@@ -428,7 +364,7 @@ public final class Mapper {
     return UUID.randomUUID();
   }
 
-  private static Instant newTimestamp() {
+  public static Instant newTimestamp() {
     return Instant.now();
   }
 

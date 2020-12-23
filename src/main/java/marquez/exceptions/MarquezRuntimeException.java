@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package marquez;
+package marquez.exceptions;
 
 import javax.annotation.Nullable;
 import lombok.NoArgsConstructor;

@@ -46,13 +46,13 @@ import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
-import marquez.db.models.NamespaceRow;
-import marquez.db.models.SourceRow;
 import marquez.db.models.TagRow;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.mappers.Mapper;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;
+import marquez.service.models.Namespace;
+import marquez.service.models.Source;
 import marquez.service.models.Version;
 import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 
@@ -91,8 +91,8 @@ public class DatasetService implements ServiceMetrics {
             "No dataset with name '{}' for namespace '{}' found, creating...",
             datasetName.getValue(),
             namespaceName.getValue());
-        final NamespaceRow namespaceRow = namespaceDao.findBy(namespaceName.getValue()).get();
-        final SourceRow sourceRow = sourceDao.findBy(datasetMeta.getSourceName().getValue()).get();
+        final Namespace namespace = namespaceDao.findBy(namespaceName.getValue()).get();
+        final Source source = sourceDao.findBy(datasetMeta.getSourceName().getValue()).get();
         final List<UUID> tagUuids =
             tagDao
                 .findAllIn(
@@ -106,7 +106,7 @@ public class DatasetService implements ServiceMetrics {
                 .collect(toImmutableList());
         final DatasetRow newDatasetRow =
             Mapper.toDatasetRow(
-                namespaceRow.getUuid(), sourceRow.getUuid(), datasetName, datasetMeta, tagUuids);
+                namespace.getUuid(), source.getUuid(), datasetName, datasetMeta, tagUuids);
         datasetDao.insert(newDatasetRow);
         log.info(
             "Successfully created dataset '{}' for namespace '{}' with meta: {}",

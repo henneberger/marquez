@@ -55,13 +55,13 @@ import marquez.db.RunStateDao;
 import marquez.db.models.ExtendedJobVersionRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
-import marquez.db.models.NamespaceRow;
 import marquez.service.RunTransitionListener.JobInputUpdate;
 import marquez.service.RunTransitionListener.JobOutputUpdate;
 import marquez.service.RunTransitionListener.RunTransition;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
+import marquez.service.models.Namespace;
 import marquez.service.models.Version;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,7 +80,7 @@ public class JobServiceTest {
   private static final String DESCRIPTION = newDescription();
 
   private static final UUID JOB_VERSION_ROW_UUID = newRowUuid();
-  private static final NamespaceRow NAMESPACE_ROW = newNamespaceRowWith(NAMESPACE_NAME);
+  private static final Namespace NAMESPACE_ROW = newNamespaceRowWith(NAMESPACE_NAME);
 
   // BATCH JOB META
   private static final JobMeta JOB_META =

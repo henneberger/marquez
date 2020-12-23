@@ -14,64 +14,90 @@
 
 package marquez.db;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import javax.annotation.Nullable;
-import marquez.db.mappers.NamespaceRowMapper;
-import marquez.db.models.NamespaceOwnershipRow;
-import marquez.db.models.NamespaceRow;
-import marquez.db.models.OwnerRow;
-import org.jdbi.v3.sqlobject.CreateSqlObject;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import marquez.common.models.NamespaceName;
+import marquez.common.models.OwnerName;
+import marquez.db.mappers.NamespaceMapper;
+import marquez.service.models.Namespace;
+import marquez.service.models.NamespaceMeta;
 import org.jdbi.v3.sqlobject.SqlObject;
-import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
-import org.jdbi.v3.sqlobject.customizer.BindBean;
-import org.jdbi.v3.sqlobject.statement.MapTo;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
-import org.jdbi.v3.sqlobject.transaction.Transaction;
 
-@RegisterRowMapper(NamespaceRowMapper.class)
+@RegisterRowMapper(NamespaceMapper.class)
 public interface NamespaceDao extends SqlObject {
-  @CreateSqlObject
-  OwnerDao createOwnerDao();
-
-  @CreateSqlObject
-  NamespaceOwnershipDao createNamespaceOwnershipDao();
-
-  @Transaction
-  default void insertWith(NamespaceRow namespaceRow, NamespaceOwnershipRow ownershipRow) {
-    insertWith(namespaceRow, null, ownershipRow);
-  }
-
-  @Transaction
-  default void insertWith(
-      NamespaceRow namespaceRow, @Nullable OwnerRow ownerRow, NamespaceOwnershipRow ownershipRow) {
-    insert(namespaceRow);
-    if (ownerRow != null) {
-      createOwnerDao().insertAndUpdateWith(ownerRow, namespaceRow.getUuid());
-    }
-    createNamespaceOwnershipDao().insert(ownershipRow);
-  }
-
-  default UUID insert(NamespaceRow row) {
+  default Namespace upsert(UpsertNamespaceFragment fragment) {
     return withHandle(
         handle -> {
           String upsert =
-              "INSERT INTO namespaces (created_at, updated_at, name, description, current_owner_name) "
-                  + "VALUES (:createdAt, :updatedAt, :name, :description, :currentOwnerName) ON CONFLICT(name)"
-                  + " DO UPDATE SET name = :name RETURNING uuid";
-          return handle
+              "INSERT INTO namespaces (created_at, updated_at, name, description) "
+                  + "VALUES (:createdAt, :updatedAt, :name, :description) ON CONFLICT(name)"
+                  + " DO UPDATE SET name = :name RETURNING uuid, created_at, updated_at, name, "
+                  + " description, current_owner_name";
+          Namespace namespace = handle
               .createQuery(upsert)
-              .bindBean(row)
-              .mapTo(UUID.class)
+              .bindBean(fragment)
+              .map(new NamespaceMapper())
               .one();
+
+          //Rather than handle it as a trigger, get the current name and update it
+          if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getOwnerName())) {
+            if (fragment.getCurrentOwnerName().isPresent()) {
+              String ownerUpsert =
+                  "INSERT INTO owners (created_at, name) " + "VALUES (:createdAt, :name) "
+                      + "ON CONFLICT(name) DO UPDATE SET name = EXCLUDED.name RETURNING uuid";
+              UUID ownerUuid = handle
+                .createQuery(ownerUpsert)
+                .bind("createdAt", Instant.now())
+                .bind("name", fragment.getCurrentOwnerName().orElse(null))
+                .mapTo(UUID.class)
+                .one();
+
+              String ownershipUpsert =
+                  "INSERT INTO namespace_ownerships (started_at, namespace_uuid, owner_uuid) "
+                      + "VALUES (:startedAt, :namespaceUuid, :ownerUuid) "
+                      + "ON CONFLICT (namespace_uuid, owner_uuid) DO NOTHING";
+
+              handle
+                  .createUpdate(ownershipUpsert)
+                  .bind("startedAt", Instant.now())
+                  .bind("namespaceUuid", namespace.getUuid())
+                  .bind("ownerUuid", ownerUuid)
+                  .execute();
+            }
+
+            String update =
+                "UPDATE namespaces SET current_owner_name = :currentOwnerName WHERE uuid = :uuid";
+            handle
+                .createUpdate(update)
+                .bind("currentOwnerName", fragment.getCurrentOwnerName())
+                .bind("uuid", namespace.getUuid())
+                .execute();
+
+            namespace.setOwnerName(OwnerName.of(fragment.getCurrentOwnerName().orElse(null)));
+          }
+
+          return namespace;
         });
+  }
+
+  default boolean isChangeOwnership(Optional<String> fragment, OwnerName namespace) {
+    if (fragment == null) {
+      return false;
+    }
+    if (fragment.isEmpty() && namespace != null) {
+      return true;
+    }
+    if (fragment.isPresent() && (namespace == null || !namespace.getValue().equals(fragment.get()))) {
+      return true;
+    }
+    return false;
   }
 
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM namespaces WHERE name = :name)")
@@ -85,14 +111,42 @@ public interface NamespaceDao extends SqlObject {
   void update(UUID rowUuid, Instant updatedAt, String currentOwnerName);
 
   @SqlQuery("SELECT * FROM namespaces WHERE uuid = :rowUuid")
-  Optional<NamespaceRow> findBy(UUID rowUuid);
+  Optional<Namespace> findBy(UUID rowUuid);
 
   @SqlQuery("SELECT * FROM namespaces WHERE name = :name")
-  Optional<NamespaceRow> findBy(String name);
+  Optional<Namespace> findBy(String name);
 
   @SqlQuery("SELECT * FROM namespaces ORDER BY name LIMIT :limit OFFSET :offset")
-  List<NamespaceRow> findAll(int limit, int offset);
+  List<Namespace> findAll(int limit, int offset);
 
   @SqlQuery("SELECT COUNT(*) FROM namespaces")
   int count();
+
+  @AllArgsConstructor
+  @Getter
+  public class UpsertNamespaceFragment {
+    public Instant createdAt;
+    public Instant updatedAt;
+    public String name;
+    public Optional<String> description;
+    public Optional<String> currentOwnerName;
+
+    public static UpsertNamespaceFragment build(NamespaceName name, NamespaceMeta meta) {
+      return new UpsertNamespaceFragment(Instant.now(), Instant.now(),
+          name.getValue(),
+          meta.getDescription(),
+          Optional.ofNullable(meta.getOwnerName().getValue()));
+    }
+
+    public static UpsertNamespaceFragment build(String namespace) {
+      return new UpsertNamespaceFragment(Instant.now(), Instant.now(),
+          namespace, null, null);
+    }
+
+    public static UpsertNamespaceFragment build(Namespace namespaceRow) {
+      return new UpsertNamespaceFragment(namespaceRow.getCreatedAt(), namespaceRow.getUpdatedAt(),
+          namespaceRow.getName().getValue(), namespaceRow.getDescription(),
+          Optional.of(namespaceRow.getOwnerName().getValue()));
+    }
+  }
 }

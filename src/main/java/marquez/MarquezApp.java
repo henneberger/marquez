@@ -40,6 +40,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import marquez.db.DbMigration;
 import marquez.db.FlywayFactory;
+import marquez.exceptions.MarquezException;
 import org.flywaydb.core.api.FlywayException;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.postgres.PostgresPlugin;

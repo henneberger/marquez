@@ -21,6 +21,7 @@ import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -83,7 +84,7 @@ public class NamespaceResource extends AbstractResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final ImmutableList<Namespace> namespaces = serviceFactory.getNamespaceService().getAll(limit, offset);
+    final List<Namespace> namespaces = serviceFactory.getNamespaceService().getAll(limit, offset);
     return Response.ok(new Namespaces(namespaces)).build();
   }
 
@@ -91,6 +92,6 @@ public class NamespaceResource extends AbstractResource {
   static class Namespaces {
     @NonNull
     @JsonProperty("namespaces")
-    ImmutableList<Namespace> value;
+    List<Namespace> value;
   }
 }

@@ -19,7 +19,6 @@ import static java.util.Arrays.asList;
 import static marquez.Generator.newTimestamp;
 import static marquez.common.models.ModelGenerator.newDatasetName;
 import static marquez.common.models.ModelGenerator.newNamespaceName;
-import static marquez.db.models.ModelGenerator.newDatasetRow;
 import static marquez.db.models.ModelGenerator.newDatasetRowWith;
 import static marquez.db.models.ModelGenerator.newDatasetRowsWith;
 import static marquez.db.models.ModelGenerator.newDatasetVersionRowWith;
@@ -44,13 +43,15 @@ import marquez.IntegrationTests;
 import marquez.JdbiRuleInit;
 import marquez.common.models.DatasetName;
 import marquez.common.models.NamespaceName;
+import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
 import marquez.db.models.ExtendedDatasetVersionRow;
-import marquez.db.models.NamespaceRow;
-import marquez.db.models.SourceRow;
+import marquez.db.models.ModelGenerator;
 import marquez.db.models.TagRow;
+import marquez.service.models.Namespace;
+import marquez.service.models.Source;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
 import org.junit.Before;
@@ -80,7 +81,7 @@ public class DatasetDaoTest {
           DatasetRow::getLastModifiedAt,
           DatasetRow::getDescription,
           DatasetRow::getCurrentVersionUuid);
-  private UUID sourceUuid;
+  private Source source;
   private UUID namespaceUuid;
 
   private static void assertEquals(DatasetRow actual, DatasetRow expected) {
@@ -95,8 +96,7 @@ public class DatasetDaoTest {
   private static DatasetVersionDao datasetVersionDao;
   private static TagDao tagDao;
 
-  private static NamespaceRow namespaceRow;
-  private static SourceRow sourceRow;
+  private static Namespace namespaceRow;
   private static List<TagRow> tagRows;
 
   @Before
@@ -109,10 +109,9 @@ public class DatasetDaoTest {
     tagDao = jdbi.onDemand(TagDao.class);
 
     namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
-    namespaceUuid = namespaceDao.insert(namespaceRow);
-
-    sourceRow = newSourceRow();
-    sourceUuid = sourceDao.upsert(sourceRow);
+    namespaceRow = namespaceDao.upsert(UpsertNamespaceFragment.build(namespaceRow));
+    namespaceUuid = namespaceRow.getUuid();
+    source = sourceDao.upsert(newSourceRow());
 
     tagRows = newTagRows(2);
     tagRows.forEach(tagRow -> tagDao.insert(tagRow));
@@ -123,7 +122,7 @@ public class DatasetDaoTest {
     final int rowsBefore = datasetDao.count();
 
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final int rowsAfter = datasetDao.count();
@@ -133,7 +132,7 @@ public class DatasetDaoTest {
   @Test
   public void testExists() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final boolean exists = datasetDao.exists(NAMESPACE_NAME.getValue(), newRow.getName());
@@ -143,7 +142,7 @@ public class DatasetDaoTest {
   @Test
   public void testUpdateTags() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     // Tag
@@ -161,7 +160,7 @@ public class DatasetDaoTest {
   @Test
   public void testUpdateLastModifiedAt() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     // Modified
@@ -175,7 +174,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindBy() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final Optional<ExtendedDatasetRow> row = datasetDao.findBy(newRow.getUuid());
@@ -185,7 +184,7 @@ public class DatasetDaoTest {
 
   @Test
   public void testFindBy_notFound() {
-    final DatasetRow newRow = newDatasetRow();
+    final DatasetRow newRow = ModelGenerator.newDatasetRowWith(source.getUuid());
 
     final Optional<ExtendedDatasetRow> row = datasetDao.findBy(newRow.getUuid());
     assertThat(row).isEmpty();
@@ -194,7 +193,7 @@ public class DatasetDaoTest {
   @Test
   public void testFind() {
     final DatasetRow newRow =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(newRow);
 
     final Optional<ExtendedDatasetRow> row =
@@ -217,7 +216,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAllIn_uuidList() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<UUID> newRowUuids =
@@ -233,7 +232,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAllIn_stringList() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<String> newDatasetNames =
@@ -257,7 +256,7 @@ public class DatasetDaoTest {
   @Test
   public void testFindAll() {
     final List<DatasetRow> newRows =
-        newDatasetRowsWith(namespaceUuid, sourceUuid, toTagUuids(tagRows), 4);
+        newDatasetRowsWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows), 4);
     newRows.forEach(newRow -> datasetDao.insert(newRow));
 
     final List<ExtendedDatasetRow> rows = datasetDao.findAll(NAMESPACE_NAME.getValue(), 4, 0);
@@ -267,7 +266,7 @@ public class DatasetDaoTest {
   @Test
   public void testDatasetVersions() {
     final DatasetRow ds =
-        newDatasetRowWith(namespaceUuid, sourceUuid, toTagUuids(tagRows));
+        newDatasetRowWith(namespaceUuid, source.getUuid(), toTagUuids(tagRows));
     datasetDao.insert(ds);
 
     DatasetVersionRow dsv =

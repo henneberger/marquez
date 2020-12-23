@@ -12,29 +12,24 @@
  * limitations under the License.
  */
 
-package marquez.db.models;
+package marquez.exceptions;
 
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
 import javax.annotation.Nullable;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import lombok.NoArgsConstructor;
 
-@Value
-@Builder
-@AllArgsConstructor
-public class NamespaceRow {
-  @NonNull UUID uuid;
-  @NonNull Instant createdAt;
-  @NonNull Instant updatedAt;
-  @NonNull String name;
-  @Nullable String description;
-  @NonNull String currentOwnerName;
+@NoArgsConstructor
+public class MarquezException extends Exception {
+  private static final long serialVersionUID = 1L;
 
-  public Optional<String> getDescription() {
-    return Optional.ofNullable(description);
+  public MarquezException(@Nullable final String message) {
+    super(message);
+  }
+
+  public MarquezException(@Nullable final Throwable cause) {
+    super(cause);
+  }
+
+  public MarquezException(@Nullable final String message, @Nullable final Throwable cause) {
+    super(message, cause);
   }
 }

@@ -49,11 +49,11 @@ import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.db.models.JobVersionRow;
-import marquez.db.models.NamespaceRow;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.mappers.Mapper;
 import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
+import marquez.service.models.Namespace;
 import marquez.service.models.Version;
 
 @Slf4j
@@ -181,7 +181,7 @@ public class JobService implements ServiceMetrics {
     return jobContextDao.findBy(checksum).get();
   }
 
-  private NamespaceRow getNamespace(String namespaceName) {
+  private Namespace getNamespace(String namespaceName) {
     return namespaceDao.findBy(namespaceName).orElseThrow(MarquezServiceException::new);
   }
 
@@ -191,7 +191,7 @@ public class JobService implements ServiceMetrics {
         "No job with name '{}' for namespace '{}' found, creating...",
         jobName.getValue(),
         namespaceName.getValue());
-    final NamespaceRow namespaceRow = getNamespace(namespaceName.getValue());
+    final Namespace namespaceRow = getNamespace(namespaceName.getValue());
     final JobRow newJobRow = Mapper.toJobRow(namespaceRow, jobName, jobMeta);
     jobDao.insert(newJobRow);
 

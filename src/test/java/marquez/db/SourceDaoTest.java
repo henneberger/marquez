@@ -15,18 +15,17 @@
 package marquez.db;
 
 import static marquez.common.models.ModelGenerator.newSourceName;
-import static marquez.db.models.ModelGenerator.newRowUuid;
 import static marquez.db.models.ModelGenerator.newSourceRow;
 import static marquez.db.models.ModelGenerator.newSourceRows;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import marquez.DataAccessTests;
 import marquez.IntegrationTests;
 import marquez.JdbiRuleInit;
 import marquez.db.models.SourceRow;
+import marquez.service.models.Source;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
 import org.junit.BeforeClass;
@@ -52,25 +51,10 @@ public class SourceDaoTest {
     final int rowsBefore = sourceDao.count();
 
     final SourceRow newRow = newSourceRow();
-    UUID uuid = sourceDao.upsert(newRow);
-    assertThat(uuid).isNotNull();
+    Source source = sourceDao.upsert(newRow);
+    assertThat(source).isNotNull();
     final int rowsAfter = sourceDao.count();
     assertThat(rowsAfter).isEqualTo(rowsBefore + 1);
-  }
-
-  @Test
-  public void testFindBy_uuid() {
-    final SourceRow newRow = newSourceRow();
-    sourceDao.upsert(newRow);
-
-    final Optional<SourceRow> row = sourceDao.findBy(newRow.getUuid());
-    assertThat(row).isPresent();
-  }
-
-  @Test
-  public void testFindBy_uuidNotFound() {
-    final Optional<SourceRow> row = sourceDao.findBy(newRowUuid());
-    assertThat(row).isEmpty();
   }
 
   @Test
@@ -78,13 +62,13 @@ public class SourceDaoTest {
     final SourceRow newRow = newSourceRow();
     sourceDao.upsert(newRow);
 
-    final Optional<SourceRow> row = sourceDao.findBy(newRow.getName());
+    final Optional<Source> row = sourceDao.findBy(newRow.getName());
     assertThat(row).isPresent();
   }
 
   @Test
   public void testFindBy_nameNotFound() {
-    final Optional<SourceRow> row = sourceDao.findBy(newSourceName().getValue());
+    final Optional<Source> row = sourceDao.findBy(newSourceName().getValue());
     assertThat(row).isEmpty();
   }
 
@@ -93,7 +77,7 @@ public class SourceDaoTest {
     final List<SourceRow> newRows = newSourceRows(4);
     newRows.forEach(newRow -> sourceDao.upsert(newRow));
 
-    final List<SourceRow> rows = sourceDao.findAll(4, 0);
+    final List<Source> rows = sourceDao.findAll(4, 0);
     assertThat(rows).isNotNull().hasSize(4);
   }
 }

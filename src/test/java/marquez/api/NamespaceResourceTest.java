@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -102,7 +101,7 @@ public class NamespaceResourceTest {
 
   static Namespace toNamespace(final NamespaceName namespaceName, final NamespaceMeta meta) {
     final Instant now = newTimestamp();
-    return new Namespace(
+    return new Namespace(null,
         namespaceName, now, now, meta.getOwnerName(), meta.getDescription().orElse(null));
   }
 }

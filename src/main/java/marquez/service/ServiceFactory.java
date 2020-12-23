@@ -14,8 +14,6 @@ import marquez.db.JobContextDao;
 import marquez.db.JobDao;
 import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
-import marquez.db.NamespaceOwnershipDao;
-import marquez.db.OwnerDao;
 import marquez.db.RunArgsDao;
 import marquez.db.RunDao;
 import marquez.db.RunStateDao;
@@ -26,8 +24,6 @@ import org.jdbi.v3.core.Jdbi;
 
 public class ServiceFactory {
   @Getter private NamespaceDao namespaceDao;
-  @Getter private OwnerDao ownerDao;
-  @Getter private NamespaceOwnershipDao namespaceOwnershipDao;
   @Getter private SourceDao sourceDao;
   @Getter private DatasetDao datasetDao;
   @Getter private DatasetFieldDao datasetFieldDao;
@@ -57,8 +53,6 @@ public class ServiceFactory {
       @NonNull ImmutableSet<Tag> tags,
       @NonNull List<RunTransitionListener> runTransitionListeners) {
     this.namespaceDao = jdbi.onDemand(NamespaceDao.class);
-    this.ownerDao = jdbi.onDemand(OwnerDao.class);
-    this.namespaceOwnershipDao = jdbi.onDemand(NamespaceOwnershipDao.class);
     this.sourceDao = jdbi.onDemand(SourceDao.class);
     this.datasetDao = jdbi.onDemand(DatasetDao.class);
     this.datasetFieldDao = jdbi.onDemand(DatasetFieldDao.class);
@@ -71,7 +65,7 @@ public class ServiceFactory {
     this.runStateDao = jdbi.onDemand(RunStateDao.class);
     this.tagDao = jdbi.onDemand(TagDao.class);
     this.lineageDao = new OpenLineageDao(con, this, runTransitionListeners);
-    this.namespaceService = new NamespaceService(namespaceDao, ownerDao, namespaceOwnershipDao);
+    this.namespaceService = new NamespaceService(namespaceDao);
     this.sourceService = new SourceService(sourceDao);
     this.datasetService =
         new DatasetService(

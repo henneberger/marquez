@@ -17,17 +17,21 @@ package marquez.db;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import marquez.db.mappers.SourceRowMapper;
+import lombok.NonNull;
+import marquez.common.models.SourceName;
+import marquez.db.mappers.SourceMapper;
 import marquez.db.models.SourceRow;
+import marquez.service.mappers.Mapper;
+import marquez.service.models.Source;
+import marquez.service.models.SourceMeta;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 
-@RegisterRowMapper(SourceRowMapper.class)
+@RegisterRowMapper(SourceMapper.class)
 public interface SourceDao extends SqlObject {
 
-  default UUID upsert(SourceRow sourceRow) {
+  default Source upsert(SourceRow sourceRow) {
     return withHandle(
         handle -> {
           String upsert =
@@ -53,27 +57,37 @@ public interface SourceDao extends SqlObject {
           if (sourceRow.getDescription() != null) {
             upsert += ", description = :description";
           }
-          upsert += " RETURNING uuid";
+          upsert += " RETURNING uuid, type, created_at, updated_at, name, connection_url, description";
           return handle
               .createQuery(upsert)
               .bind("createdAt", Instant.now())
               .bind("updatedAt", Instant.now())
               .bindBean(sourceRow)
-              .mapTo(UUID.class)
+              .map(new SourceMapper())
               .one();
         });
   }
 
-  @SqlQuery("SELECT * FROM sources WHERE uuid = :rowUuid")
-  Optional<SourceRow> findBy(UUID rowUuid);
-
   @SqlQuery("SELECT * FROM sources WHERE name = :name")
-  Optional<SourceRow> findBy(String name);
+  Optional<Source> findBy(String name);
 
   @SqlQuery("SELECT * FROM sources ORDER BY name LIMIT :limit OFFSET :offset")
-  List<SourceRow> findAll(int limit, int offset);
+  List<Source> findAll(int limit, int offset);
 
   @SqlQuery("SELECT COUNT(*) FROM sources")
   int count();
 
+  public static class InputFragment {
+    public static SourceRow build(
+        @NonNull final SourceName name, @NonNull final SourceMeta meta) {
+      final Instant now = Mapper.newTimestamp();
+      return new SourceRow(
+          meta.getType().toString(),
+          now,
+          now,
+          name.getValue(),
+          meta.getConnectionUrl().toASCIIString(),
+          meta.getDescription().orElse(null));
+    }
+  }
 }

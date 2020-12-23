@@ -16,19 +16,12 @@ package marquez.service;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.collect.ImmutableList;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import marquez.common.models.SourceName;
-import marquez.common.models.SourceType;
 import marquez.db.SourceDao;
-import marquez.db.models.SourceRow;
-import marquez.service.exceptions.MarquezServiceException;
-import marquez.service.mappers.Mapper;
 import marquez.service.models.Source;
 import marquez.service.models.SourceMeta;
 
@@ -42,34 +35,19 @@ public class SourceService implements ServiceMetrics {
   }
 
   public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta) {
-    sourceDao.upsert(Mapper.toSourceRow(name, meta));
+    Source source = sourceDao.upsert(SourceDao.InputFragment.build(name, meta));
     log.info("Successfully created source '{}' with meta: {}", name.getValue(), meta);
     sources.inc();
-    return get(name).get();
+    return source;
   }
 
   public Optional<Source> get(@NonNull SourceName name) {
-    return sourceDao.findBy(name.getValue()).map(SourceService::toSource);
+    return sourceDao.findBy(name.getValue());
   }
 
-  public ImmutableList<Source> list(int limit, int offset) {
+  public List<Source> list(int limit, int offset) {
     checkArgument(limit >= 0, "limit must be >= 0");
     checkArgument(offset >= 0, "offset must be >= 0");
-    final ImmutableList.Builder<Source> sources = ImmutableList.builder();
-    final List<SourceRow> rows = sourceDao.findAll(limit, offset);
-    for (final SourceRow row : rows) {
-      sources.add(toSource(row));
-    }
-    return sources.build();
-  }
-
-  static Source toSource(@NonNull final SourceRow row) {
-    return new Source(
-        SourceType.valueOf(row.getType()),
-        SourceName.of(row.getName()),
-        row.getCreatedAt(),
-        row.getUpdatedAt(),
-        URI.create(row.getConnectionUrl()),
-        row.getDescription().orElse(null));
+    return sourceDao.findAll(limit, offset);
   }
 }

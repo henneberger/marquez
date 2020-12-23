@@ -56,7 +56,6 @@ import marquez.db.TagDao;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
-import marquez.db.models.TagRow;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;

@@ -53,7 +53,6 @@ import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.ExtendedDatasetVersionRow;
 import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.SourceRow;
-import marquez.db.models.TagRow;
 import marquez.service.DatasetService;
 import marquez.service.JobService;
 import marquez.service.RunService;

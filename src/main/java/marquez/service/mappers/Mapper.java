@@ -59,7 +59,6 @@ import marquez.db.models.RunArgsRow;
 import marquez.db.models.RunRow;
 import marquez.db.models.RunStateRow;
 import marquez.db.models.StreamVersionRow;
-import marquez.db.models.TagRow;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;
 import marquez.service.models.DbTable;
@@ -67,7 +66,6 @@ import marquez.service.models.DbTableMeta;
 import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
 import marquez.service.models.Namespace;
-import marquez.service.models.NamespaceMeta;
 import marquez.service.models.Run;
 import marquez.service.models.RunMeta;
 import marquez.service.models.Stream;
@@ -226,14 +224,6 @@ public final class Mapper {
         fieldUuids,
         meta.getRunId().map(RunId::getValue).orElse(null),
         ((StreamMeta) meta).getSchemaLocation().toString());
-  }
-
-  public static Tag toTag(@NonNull final TagRow row) {
-    return new Tag(TagName.of(row.getName()), row.getDescription().orElse(null));
-  }
-
-  public static List<Tag> toTags(@NonNull final List<TagRow> rows) {
-    return rows.stream().map(Mapper::toTag).collect(toImmutableList());
   }
 
   public static Job toJob(

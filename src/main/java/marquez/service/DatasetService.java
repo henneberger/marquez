@@ -46,13 +46,13 @@ import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
-import marquez.db.models.TagRow;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.mappers.Mapper;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;
 import marquez.service.models.Namespace;
 import marquez.service.models.Source;
+import marquez.service.models.Tag;
 import marquez.service.models.Version;
 import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 
@@ -102,7 +102,7 @@ public class DatasetService implements ServiceMetrics {
                             .collect(toImmutableList()),
                         String.class))
                 .stream()
-                .map(TagRow::getUuid)
+                .map(Tag::getUuid)
                 .collect(toImmutableList());
         final DatasetRow newDatasetRow =
             Mapper.toDatasetRow(
@@ -187,7 +187,7 @@ public class DatasetService implements ServiceMetrics {
                     field.getTags().stream().map(TagName::getValue).collect(toImmutableList()),
                     String.class))
             .stream()
-            .map(TagRow::getUuid)
+            .map(Tag::getUuid)
             .collect(toImmutableList());
     return Mapper.toDatasetFieldRow(datasetUuid, field, tagUuids);
   }
@@ -262,8 +262,7 @@ public class DatasetService implements ServiceMetrics {
       @NonNull ExtendedDatasetRow datasetRow, @Nullable UUID datasetVersionUuid) {
     final ImmutableSet<TagName> tags =
         tagDao.findAllIn(toArray(datasetRow.getTagUuids(), UUID.class)).stream()
-            .map(TagRow::getName)
-            .map(TagName::of)
+            .map(Tag::getName)
             .collect(toImmutableSet());
     final DatasetVersionRow versionRow =
         versionDao
@@ -284,7 +283,7 @@ public class DatasetService implements ServiceMetrics {
   private Field toField(@NonNull DatasetFieldRow fieldRow) {
     final ImmutableSet<TagName> tags =
         tagDao.findAllIn(toArray(fieldRow.getTagUuids(), UUID.class)).stream()
-            .map(row -> TagName.of(row.getName()))
+            .map(Tag::getName)
             .collect(toImmutableSet());
     return Mapper.toField(fieldRow, tags);
   }
@@ -297,7 +296,7 @@ public class DatasetService implements ServiceMetrics {
     try {
       final ExtendedDatasetRow datasetRow =
           datasetDao.find(namespaceName.getValue(), datasetName.getValue()).get();
-      final TagRow tagRow =
+      final Tag tagRow =
           tagDao.findBy(tagName.getValue().toUpperCase(Locale.getDefault())).get();
       final Instant taggedAt = Instant.now();
       datasetDao.updateTags(datasetRow.getUuid(), tagRow.getUuid(), taggedAt);
@@ -320,7 +319,7 @@ public class DatasetService implements ServiceMetrics {
           datasetDao.find(namespaceName.getValue(), datasetName.getValue()).get();
       final DatasetFieldRow fieldRow =
           fieldDao.find(datasetRow.getUuid(), fieldName.getValue()).get();
-      final TagRow tagRow =
+      final Tag tagRow =
           tagDao.findBy(tagName.getValue().toUpperCase(Locale.getDefault())).get();
       final Instant taggedAt = Instant.now();
       fieldDao.updateTags(fieldRow.getUuid(), tagRow.getUuid(), taggedAt);

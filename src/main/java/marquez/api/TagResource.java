@@ -20,7 +20,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -58,7 +58,7 @@ public class TagResource extends AbstractResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final ImmutableSet<Tag> tags = serviceFactory.getTagService().list(limit, offset);
+    final List<Tag> tags = serviceFactory.getTagService().list(limit, offset);
     return Response.ok(new Tags(tags)).build();
   }
 
@@ -109,6 +109,6 @@ public class TagResource extends AbstractResource {
   static class Tags {
     @NonNull
     @JsonProperty("tags")
-    ImmutableSet<Tag> value;
+    List<Tag> value;
   }
 }

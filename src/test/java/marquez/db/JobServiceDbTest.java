@@ -73,6 +73,7 @@ import marquez.service.models.Run;
 import marquez.service.models.RunMeta;
 import marquez.service.models.Source;
 import marquez.service.models.SourceMeta;
+import marquez.service.models.Tag;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
 import org.junit.Before;
@@ -100,7 +101,7 @@ public class JobServiceDbTest {
 
   private static Namespace namespaceRow;
   private static SourceRow sourceRow;
-  private static List<TagRow> tagRows;
+  private static List<Tag> tagRows;
   private static JobService jobService;
   private static DatasetService datasetService;
   private static SourceService sourceService;
@@ -138,7 +139,7 @@ public class JobServiceDbTest {
     sourceDao.upsert(sourceRow);
 
     tagRows = newTagRows(2);
-    tagRows.forEach(tagRow -> tagDao.insert(tagRow));
+    tagRows.forEach(tagRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(tagRow)));
   }
 
   @Before

@@ -39,16 +39,14 @@ import marquez.common.models.DatasetName;
 import marquez.common.models.NamespaceName;
 import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
+import marquez.common.models.TagName;
 import marquez.service.models.Namespace;
 import marquez.service.models.Source;
+import marquez.service.models.Tag;
 import marquez.service.models.Version;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}
-
-  public static List<Namespace> newNamespaceRows(int limit) {
-    return Stream.generate(() -> newNamespaceRow()).limit(limit).collect(toImmutableList());
-  }
 
   public static Namespace newNamespaceRow() {
     return newNamespaceRowWith(newNamespaceName());
@@ -141,30 +139,30 @@ public final class ModelGenerator extends Generator {
         newRowUuid(), newTimestamp(), datasetUuid, version.getValue(), fieldUuids, runUuid);
   }
 
-  public static List<TagRow> newTagRows(final int limit) {
-    return Stream.generate(() -> newTagRow()).limit(limit).collect(toImmutableList());
+  public static List<Tag> newTagRows(final int limit) {
+    return Stream.generate(ModelGenerator::newTagRow).limit(limit).collect(toImmutableList());
   }
 
-  public static TagRow newTagRow() {
+  public static Tag newTagRow() {
     return newTagRowWith(newTagName().getValue());
   }
 
-  public static TagRow newTagRowWith(final String name) {
+  public static Tag newTagRowWith(final String name) {
     final Instant now = newTimestamp();
-    return new TagRow(newRowUuid(), now, now, name, newDescription());
+    return new Tag(newRowUuid(), now, now, TagName.of(name), newDescription());
   }
 
-  public static TagRow newTagRowWith(final String name, final String description) {
+  public static Tag newTagRowWith(final String name, final String description) {
     final Instant now = newTimestamp();
-    return new TagRow(newRowUuid(), now, now, name, description);
+    return new Tag(newRowUuid(), now, now, TagName.of(name), description);
   }
 
-  public static List<UUID> toTagUuids(final List<TagRow> rows) {
-    return rows.stream().map(row -> row.getUuid()).collect(toImmutableList());
+  public static List<UUID> toTagUuids(final List<Tag> rows) {
+    return rows.stream().map(Tag::getUuid).collect(toImmutableList());
   }
 
   public static List<JobContextRow> newJobContextRows(final int limit) {
-    return Stream.generate(() -> newJobContextRow()).limit(limit).collect(toImmutableList());
+    return Stream.generate(ModelGenerator::newJobContextRow).limit(limit).collect(toImmutableList());
   }
 
   public static JobContextRow newJobContextRow() {

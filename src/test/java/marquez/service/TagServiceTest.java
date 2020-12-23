@@ -23,13 +23,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Optional;
 import marquez.UnitTests;
 import marquez.common.models.TagName;
 import marquez.db.TagDao;
-import marquez.db.models.TagRow;
 import marquez.service.models.Tag;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,14 +57,11 @@ public class TagServiceTest {
     final Tag newTag = new Tag(TAG_NAME, TAG_DESCRIPTION);
     when(dao.exists(newTag.getName().getValue())).thenReturn(false);
 
-    final TagRow newRow = newTagRowWith(TAG_NAME.getValue(), TAG_DESCRIPTION);
+    final Tag newRow = newTagRowWith(TAG_NAME.getValue(), TAG_DESCRIPTION);
     when(dao.findBy(newTag.getName().getValue())).thenReturn(Optional.of(newRow));
 
-    final Tag tag = service.createOrUpdate(newTag);
+    final Tag tag = service.upsert(newTag);
     assertThat(tag).isEqualTo(newTag);
-
-    verify(dao, times(1)).exists(newTag.getName().getValue());
-    verify(dao, times(1)).findBy(newTag.getName().getValue());
   }
 
   @Test
@@ -80,23 +75,11 @@ public class TagServiceTest {
   }
 
   @Test
-  public void testGet() {
-    final TagRow newRow = newTagRowWith(TAG_NAME.getValue(), TAG_DESCRIPTION);
-    when(dao.findBy(TAG_NAME.getValue())).thenReturn(Optional.of(newRow));
-
-    final Tag expected = new Tag(TAG_NAME, TAG_DESCRIPTION);
-    final Optional<Tag> actual = service.get(TAG_NAME);
-    assertThat(actual).contains(expected);
-
-    verify(dao, times(1)).findBy(TAG_NAME.getValue());
-  }
-
-  @Test
   public void testGetAll() {
-    final List<TagRow> newRows = newTagRows(4);
+    final List<Tag> newRows = newTagRows(4);
     when(dao.findAll(4, 0)).thenReturn(newRows);
 
-    final ImmutableSet<Tag> tags = service.list(4, 0);
+    final List<Tag> tags = service.list(4, 0);
     assertThat(tags).isNotNull().hasSize(4);
 
     verify(dao, times(1)).findAll(4, 0);

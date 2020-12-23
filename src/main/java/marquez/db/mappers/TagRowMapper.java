@@ -22,20 +22,21 @@ import static marquez.db.Columns.uuidOrThrow;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import lombok.NonNull;
+import marquez.common.models.TagName;
 import marquez.db.Columns;
-import marquez.db.models.TagRow;
+import marquez.service.models.Tag;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 
-public final class TagRowMapper implements RowMapper<TagRow> {
+public final class TagRowMapper implements RowMapper<Tag> {
   @Override
-  public TagRow map(@NonNull ResultSet results, @NonNull StatementContext context)
+  public Tag map(@NonNull ResultSet results, @NonNull StatementContext context)
       throws SQLException {
-    return new TagRow(
+    return new Tag(
         uuidOrThrow(results, Columns.ROW_UUID),
         timestampOrThrow(results, Columns.CREATED_AT),
         timestampOrThrow(results, Columns.UPDATED_AT),
-        stringOrThrow(results, Columns.NAME),
+        TagName.of(stringOrThrow(results, Columns.NAME)),
         stringOrNull(results, Columns.DESCRIPTION));
   }
 }

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import marquez.DataAccessTests;
 import marquez.IntegrationTests;
 import marquez.JdbiRuleInit;
@@ -49,9 +50,9 @@ import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedDatasetRow;
 import marquez.db.models.ExtendedDatasetVersionRow;
 import marquez.db.models.ModelGenerator;
-import marquez.db.models.TagRow;
 import marquez.service.models.Namespace;
 import marquez.service.models.Source;
+import marquez.service.models.Tag;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
 import org.junit.Before;
@@ -97,7 +98,7 @@ public class DatasetDaoTest {
   private static TagDao tagDao;
 
   private static Namespace namespaceRow;
-  private static List<TagRow> tagRows;
+  private static List<Tag> tagRows;
 
   @Before
   public void before() {
@@ -113,8 +114,9 @@ public class DatasetDaoTest {
     namespaceUuid = namespaceRow.getUuid();
     source = sourceDao.upsert(newSourceRow());
 
-    tagRows = newTagRows(2);
-    tagRows.forEach(tagRow -> tagDao.insert(tagRow));
+    tagRows = newTagRows(2).stream()
+        .map(tagRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(tagRow)))
+        .collect(Collectors.toList());
   }
 
   @Test
@@ -146,8 +148,7 @@ public class DatasetDaoTest {
     datasetDao.insert(newRow);
 
     // Tag
-    final TagRow newTagRow = newTagRow();
-    tagDao.insert(newTagRow);
+    final Tag newTagRow = tagDao.upsert(TagDao.UpsertTagFragment.build(newTagRow()));
 
     final Instant taggedAt = newTimestamp();
     datasetDao.updateTags(newRow.getUuid(), newTagRow.getUuid(), taggedAt);

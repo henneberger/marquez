@@ -17,9 +17,12 @@ package marquez.service.models;
 import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -29,11 +32,17 @@ import marquez.common.models.TagName;
 
 @EqualsAndHashCode
 @ToString
+@Getter
 public final class Tag {
-  @Getter
   @JsonUnwrapped
   @JsonProperty(access = READ_ONLY)
-  private final TagName name;
+  private TagName name;
+  @JsonIgnore
+  private UUID uuid;
+  @JsonIgnore
+  private Instant createdAt;
+  @JsonIgnore
+  private Instant updatedAt;
 
   @Nullable String description;
 
@@ -45,6 +54,15 @@ public final class Tag {
   }
 
   public Tag(@NonNull final TagName name, @Nullable final String description) {
+    this.name = name;
+    this.description = description;
+  }
+
+  public Tag(UUID uuid, Instant createdAt, Instant updatedAt,
+      TagName name, String description) {
+    this.uuid = uuid;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
     this.name = name;
     this.description = description;
   }

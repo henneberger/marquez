@@ -4,6 +4,7 @@ import com.github.jasync.sql.db.pool.ConnectionPool;
 import com.github.jasync.sql.db.postgresql.PostgreSQLConnection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,8 +45,11 @@ public final class MarquezContext {
       @NonNull final Jdbi jdbi,
       @NonNull final ConnectionPool<PostgreSQLConnection> connectionPool,
       @NonNull final ImmutableSet<Tag> tags,
-      @NonNull final List<RunTransitionListener> runTransitionListeners)
+      List<RunTransitionListener> runTransitionListeners)
       throws MarquezServiceException {
+    if (runTransitionListeners == null) {
+      runTransitionListeners = new ArrayList<>();
+    }
     this.serviceFactory = new ServiceFactory(jdbi, connectionPool, tags, runTransitionListeners);
 
     this.serviceExceptionMapper = new MarquezServiceExceptionMapper();

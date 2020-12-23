@@ -64,6 +64,7 @@ import marquez.service.models.DbTable;
 import marquez.service.models.DbTableMeta;
 import marquez.service.models.Namespace;
 import marquez.service.models.Source;
+import marquez.service.models.Tag;
 import marquez.service.models.Version;
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,7 +80,7 @@ public class DatasetServiceTest {
   private static final Instant NOW = newTimestamp();
 
   private static final ImmutableList<UUID> NO_TAG_UUIDS = ImmutableList.of();
-  private static final ImmutableList<TagRow> NO_TAG_ROWS = ImmutableList.of();
+  private static final ImmutableList<Tag> NO_TAG_ROWS = ImmutableList.of();
   private static final ImmutableList<DatasetFieldRow> NO_FIELD_ROWS = ImmutableList.of();
 
   // DB TABLE DATASET

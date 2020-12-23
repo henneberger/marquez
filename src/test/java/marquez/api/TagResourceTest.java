@@ -19,7 +19,9 @@ import static marquez.service.models.ModelGenerator.newTag;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import javax.ws.rs.core.Response;
 import marquez.UnitTests;
 import marquez.service.TagService;
@@ -38,7 +40,7 @@ public class TagResourceTest {
   private static final Tag TAG_0 = newTag();
   private static final Tag TAG_1 = newTag();
   private static final Tag TAG_2 = newTag();
-  private static final ImmutableSet<Tag> TAGS = ImmutableSet.of(TAG_0, TAG_1, TAG_2);
+  private static final List<Tag> TAGS = ImmutableList.of(TAG_0, TAG_1, TAG_2);
 
   @Rule public MockitoRule rule = MockitoJUnit.rule();
 
@@ -63,7 +65,7 @@ public class TagResourceTest {
 
   @Test
   public void testList_empty() throws MarquezServiceException {
-    when(service.list(4, 0)).thenReturn(ImmutableSet.of());
+    when(service.list(4, 0)).thenReturn(ImmutableList.of());
 
     final Response response = resource.list(4, 0);
     assertThat(response.getStatus()).isEqualTo(200);

@@ -30,24 +30,43 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 @RegisterRowMapper(SourceRowMapper.class)
 public interface SourceDao extends SqlObject {
-  @SqlUpdate(
-      "INSERT INTO sources ("
-          + "uuid, "
-          + "type, "
-          + "created_at, "
-          + "updated_at, "
-          + "name, "
-          + "connection_url, "
-          + "description"
-          + ") VALUES ("
-          + ":uuid, "
-          + ":type, "
-          + ":createdAt, "
-          + ":updatedAt, "
-          + ":name, "
-          + ":connectionUrl, "
-          + ":description)")
-  void upsert(@BindBean SourceRow row);
+
+  default Object upsert(SourceRow sourceRow) {
+    return withHandle(
+        handle -> {
+          String upsert =
+              "INSERT INTO sources ("
+                  + "type, "
+                  + "created_at, "
+                  + "updated_at, "
+                  + "name, "
+                  + "connection_url, "
+                  + "description"
+                  + ") VALUES ("
+                  + ":type, "
+                  + ":createdAt, "
+                  + ":updatedAt, "
+                  + ":name, "
+                  + ":connectionUrl, "
+                  + ":description) ON CONFLICT(name) DO"
+                  + " UPDATE SET "
+                  + "type = :type"
+                  + ", updated_at = :updatedAt"
+                  + ", name = :name"
+                  + ", connection_url = :connectionUrl";
+          if (sourceRow.getDescription() != null) {
+            upsert += ", description = :description";
+          }
+          upsert += " RETURNING uuid";
+          return handle
+              .createQuery(upsert)
+              .bind("createdAt", Instant.now())
+              .bind("updatedAt", Instant.now())
+              .bindBean(sourceRow)
+              .mapTo(UUID.class)
+              .one();
+        });
+  }
 
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM sources WHERE name = :name)")
   boolean exists(String name);
@@ -64,41 +83,4 @@ public interface SourceDao extends SqlObject {
   @SqlQuery("SELECT COUNT(*) FROM sources")
   int count();
 
-  default Object upsert(SourceName name, SourceMeta meta) {
-    return withHandle(
-      handle -> {
-        String upsert =
-            "INSERT INTO sources ("
-            + "type, "
-            + "created_at, "
-            + "updated_at, "
-            + "name, "
-            + "connection_url, "
-            + "description"
-            + ") VALUES ("
-            + ":type, "
-            + ":createdAt, "
-            + ":updatedAt, "
-            + ":name, "
-            + ":connectionUrl, "
-            + ":description) ON CONFLICT(name) DO"
-            + " UPDATE SET "
-            + "type = :type"
-            + ", updated_at = :updatedAt"
-            + ", name = :name"
-            + ", connection_url = :connectionUrl";
-        if (meta.getDescription() != null) {
-          upsert += ", description = :description";
-        }
-        upsert += " RETURNING uuid";
-        return handle
-            .createQuery(upsert)
-            .bind("name", name.getValue())
-            .bind("createdAt", Instant.now())
-            .bind("updatedAt", Instant.now())
-            .bindBean(meta)
-            .mapTo(UUID.class)
-            .one();
-      });
-  }
 }

@@ -110,14 +110,14 @@ public class OpenLineageDao {
     String sourceName = UUID.randomUUID().toString();
     Optional<SourceRow> source = sf.getSourceDao().findBy(sourceName);
     if (source.isEmpty()) {
-      sf.getSourceDao().upsert(SourceRow.builder()
-          .type(SourceType.POSTGRESQL.name())
-          .createdAt(event.transitionTime.toInstant())
-          .updatedAt(event.transitionTime.toInstant())
-          .name(sourceName) //cannot be blank :(
-          .connectionUrl("http://"+UUID.randomUUID().toString())
-          .uuid(sourceUuid)
-          .build());
+//      sf.getSourceDao().upsert(SourceRow.builder()
+//          .type(SourceType.POSTGRESQL.name())
+//          .createdAt(event.transitionTime.toInstant())
+//          .updatedAt(event.transitionTime.toInstant())
+//          .name(sourceName) //cannot be blank :(
+//          .connectionUrl("http://"+UUID.randomUUID().toString())
+//          .uuid(sourceUuid)
+//          .build());
     } else {
       sourceUuid = source.get().getUuid();
     }

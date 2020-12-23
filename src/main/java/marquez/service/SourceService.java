@@ -27,6 +27,7 @@ import marquez.common.models.SourceType;
 import marquez.db.SourceDao;
 import marquez.db.models.SourceRow;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.mappers.Mapper;
 import marquez.service.models.Source;
 import marquez.service.models.SourceMeta;
 
@@ -41,7 +42,7 @@ public class SourceService implements ServiceMetrics {
 
   public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta)
       throws MarquezServiceException {
-    sourceDao.upsert(name, meta);
+    sourceDao.upsert(Mapper.toSourceRow(name, meta));
     log.info("Successfully created source '{}' with meta: {}", name.getValue(), meta);
     sources.inc();
     return get(name).get();

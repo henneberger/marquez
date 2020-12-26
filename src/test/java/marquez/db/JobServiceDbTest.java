@@ -30,9 +30,9 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,11 +51,11 @@ import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
 import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.ExtendedDatasetVersionRow;
-import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.SourceRow;
 import marquez.service.DatasetService;
 import marquez.service.JobService;
 import marquez.service.RunService;
+import marquez.service.RunStateService;
 import marquez.service.RunTransitionListener;
 import marquez.service.RunTransitionListener.JobInputUpdate;
 import marquez.service.RunTransitionListener.JobOutputUpdate;
@@ -105,8 +105,8 @@ public class JobServiceDbTest {
   private static DatasetService datasetService;
   private static SourceService sourceService;
 
-  private static RunStateDao runStateDao;
-  private static JobVersionDao versionDao;
+  public static RunStateService runStateService;
+  private static JobVersionDao jobVersionDao;
   private static JobDao jobDao;
   private static JobContextDao contextDao;
   private static RunArgsDao runArgsDao;
@@ -124,8 +124,7 @@ public class JobServiceDbTest {
     tagDao = jdbi.onDemand(TagDao.class);
     datasetVersionDao = jdbi.onDemand(DatasetVersionDao.class);
     datasetFieldDao = jdbi.onDemand(DatasetFieldDao.class);
-    runStateDao = jdbi.onDemand(RunStateDao.class);
-    versionDao = jdbi.onDemand(JobVersionDao.class);
+    jobVersionDao = jdbi.onDemand(JobVersionDao.class);
     jobDao = jdbi.onDemand(JobDao.class);
     contextDao = jdbi.onDemand(JobContextDao.class);
     runArgsDao = jdbi.onDemand(RunArgsDao.class);
@@ -144,20 +143,17 @@ public class JobServiceDbTest {
   @Before
   public void setup() {
     listener = mock(RunTransitionListener.class);
+    runStateService = new RunStateService(runDao, ImmutableList.of(listener));
 
     runService =
         new RunService(
-            versionDao,
-            datasetDao,
-            runArgsDao,
+            jobVersionDao,
             runDao,
-            datasetVersionDao,
-            runStateDao,
-            Lists.newArrayList(listener));
+            runStateService);
 
     jobService =
         new JobService(
-            namespaceDao, datasetDao, jobDao, versionDao, contextDao, runDao, runService);
+            namespaceDao, datasetDao, jobDao, jobVersionDao, contextDao, runDao, runService);
 
     datasetService =
         new DatasetService(
@@ -221,17 +217,17 @@ public class JobServiceDbTest {
     assertThat(update.getInputs()).hasSize(1);
     assertThat(update.getOutputs()).hasSize(1);
 
-    Optional<ExtendedRunRow> updatedRun = runDao.findBy(run.getId().getValue());
+    Optional<Run> updatedRun = runDao.findBy(run.getId().getValue());
     assertThat(updatedRun.isPresent()).isEqualTo(true);
-    assertThat(updatedRun.get().getInputVersionUuids()).hasSize(1);
+    assertThat(updatedRun.get().getInputs()).hasSize(1);
 
     List<ExtendedDatasetVersionRow> out_ds_versions =
         datasetVersionDao.findByRunId(run.getId().getValue());
     assertThat(out_ds_versions).hasSize(1);
 
-    Optional<ExtendedRunRow> run_row = runDao.findBy(run.getId().getValue());
+    Optional<Run> run_row = runDao.findBy(run.getId().getValue());
     assertThat(run_row.isPresent()).isEqualTo(true);
-    assertThat(run_row.get().getInputVersionUuids()).hasSize(1);
+    assertThat(run_row.get().getInputs()).hasSize(1);
 
     verify(listener, Mockito.times(2)).notify((JobInputUpdate) any());
     assertThat(jobInputUpdateArg.getAllValues().get(1).getInputs())
@@ -239,7 +235,7 @@ public class JobServiceDbTest {
             ImmutableList.of(
                 RunInput.builder()
                 .datasetVersionId(new DatasetVersionId(
-                    NAMESPACE_NAME, in_dsn, run_row.get().getInputVersionUuids().get(0)))
+                    NAMESPACE_NAME, in_dsn, run_row.get().getInputs().get(0).getUuid()))
                 .build()));
   }
 
@@ -274,23 +270,23 @@ public class JobServiceDbTest {
 
     Run run = runService.createRun(NAMESPACE_NAME, jobName, new RunMeta(null, null, null));
     assertThat(run.getId()).isNotNull();
-    assertThat(run.getStartedAt().isPresent()).isFalse();
+    assertThat(run.getStartState() != null).isFalse();
 
-    runService.markRunAs(run.getId(), RUNNING);
-    Optional<Run> startedRun = runService.getRun(run.getId());
+    runStateService.markRunAs(run.getId(), RUNNING, Instant.now());
+    Optional<Run> startedRun = runService.get(run.getId());
     assertThat(startedRun.isPresent()).isTrue();
-    assertThat(startedRun.get().getStartedAt()).isNotNull();
-    assertThat(startedRun.get().getEndedAt().isPresent()).isFalse();
+    assertThat(startedRun.get().getStartState()).isNotNull();
+    assertThat(startedRun.get().getEndState()).isNull();
 
-    runService.markRunAs(run.getId(), COMPLETED);
-    Optional<Run> endedRun = runService.getRun(run.getId());
+    runStateService.markRunAs(run.getId(), COMPLETED, Instant.now());
+    Optional<Run> endedRun = runService.get(run.getId());
     assertThat(endedRun.isPresent()).isTrue();
-    assertThat(endedRun.get().getStartedAt()).isEqualTo(startedRun.get().getStartedAt());
-    assertThat(endedRun.get().getEndedAt()).isNotNull();
+    assertThat(endedRun.get().getStartState().transitionedAt).isEqualTo(startedRun.get().getStartState().transitionedAt);
+    assertThat(endedRun.get().getEndState()).isNotNull();
 
     List<Run> allRuns = runService.getAllRunsFor(NAMESPACE_NAME, jobName, 10, 0);
     assertThat(allRuns.size()).isEqualTo(1);
-    assertThat(allRuns.get(0).getEndedAt()).isEqualTo(endedRun.get().getEndedAt());
+    assertThat(allRuns.get(0).getEndState().transitionedAt).isEqualTo(endedRun.get().getEndState().transitionedAt);
 
     List<JobInputUpdate> jobInputUpdates = jobInputUpdateArg.getAllValues();
     assertThat(jobInputUpdates.size()).isEqualTo(1);
@@ -317,7 +313,7 @@ public class JobServiceDbTest {
   }
 
   @Test
-  public void testRunWithId() throws MarquezServiceException, MalformedURLException {
+  public void testRunWithId() throws MarquezServiceException {
     JobName jobName = JobName.of("MY_JOB2");
     Job job =
         jobService.createOrUpdate(
@@ -332,12 +328,10 @@ public class JobServiceDbTest {
                 "description",
                 null));
 
-    RunId run2Id = RunId.of(UUID.randomUUID());
     Run run2 =
-        runService.createRun(NAMESPACE_NAME, job.getName(), new RunMeta(run2Id, null, null, null));
-    assertThat(run2.getId()).isEqualTo(run2Id);
-    Optional<Run> run2Again = runService.getRun(run2Id);
+        runService.createRun(NAMESPACE_NAME, job.getName(), new RunMeta(RunId.of(UUID.randomUUID()),
+            null, null, null));
+    Optional<Run> run2Again = runService.get(run2.getId());
     assertThat(run2Again.isPresent()).isTrue();
-    assertThat(run2Again.get().getId()).isEqualTo(run2Id);
   }
 }

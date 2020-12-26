@@ -14,10 +14,12 @@
 
 package marquez.service.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.net.URL;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
@@ -29,6 +31,7 @@ import marquez.common.models.JobId;
 import marquez.common.models.JobName;
 import marquez.common.models.JobType;
 import marquez.common.models.NamespaceName;
+import marquez.db.models.JobVersionRow;
 
 @EqualsAndHashCode
 @ToString
@@ -45,6 +48,12 @@ public final class Job {
   @Getter private final ImmutableMap<String, String> context;
   @Nullable private final String description;
   @Nullable private final Run latestRun;
+
+  @JsonIgnore
+  public List<JobVersionRow> versions;
+
+  @JsonIgnore
+  public Namespace namespace_;
 
   public Job(
       @NonNull final JobId id,

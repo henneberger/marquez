@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.Builder;
 import lombok.NonNull;
 import marquez.db.mappers.ExtendedJobVersionRowMapper;
 import marquez.db.models.ExtendedJobVersionRow;
@@ -122,7 +121,7 @@ public interface JobVersionDao extends SqlObject {
   @SqlQuery(
       EXTENDED_SELECT
           + "WHERE n.name = :namespaceName AND j.name = :jobName AND j.current_version_uuid = jv.uuid "
-          + "ORDER BY created_at DESC "
+          + "ORDER BY updated_at DESC "
           + "LIMIT 1")
   Optional<ExtendedJobVersionRow> findLatest(String namespaceName, String jobName);
 

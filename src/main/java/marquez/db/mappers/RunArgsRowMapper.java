@@ -18,9 +18,12 @@ import static marquez.db.Columns.stringOrThrow;
 import static marquez.db.Columns.timestampOrThrow;
 import static marquez.db.Columns.uuidOrThrow;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 import lombok.NonNull;
+import marquez.common.Utils;
 import marquez.db.Columns;
 import marquez.db.models.RunArgsRow;
 import org.jdbi.v3.core.mapper.RowMapper;
@@ -33,7 +36,8 @@ public final class RunArgsRowMapper implements RowMapper<RunArgsRow> {
     return new RunArgsRow(
         uuidOrThrow(results, Columns.ROW_UUID),
         timestampOrThrow(results, Columns.CREATED_AT),
-        stringOrThrow(results, Columns.ARGS),
+        Utils.fromJson(stringOrThrow(results, Columns.ARGS),
+            new TypeReference<Map<String, String>>() {}),
         stringOrThrow(results, Columns.CHECKSUM));
   }
 }

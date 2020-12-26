@@ -55,7 +55,7 @@ public final class ModelGenerator extends Generator {
   public static Namespace newNamespaceRowWith(final NamespaceName name) {
     final Instant now = newTimestamp();
     return new Namespace(
-        newRowUuid(), name, now, now, newOwnerName(), newDescription());
+        newRowUuid(), name, now, now, newOwnerName(), newDescription(), null);
   }
 
   public static List<SourceRow> newSourceRows(final int limit) {
@@ -136,7 +136,7 @@ public final class ModelGenerator extends Generator {
   public static DatasetVersionRow newDatasetVersionRowWith(
       UUID datasetUuid, Version version, ImmutableList<UUID> fieldUuids, UUID runUuid) {
     return new DatasetVersionRow(
-        newRowUuid(), newTimestamp(), datasetUuid, version.getValue(), fieldUuids, runUuid);
+        newRowUuid(), newTimestamp(), datasetUuid, version.getValue(), fieldUuids, runUuid, null);
   }
 
   public static List<Tag> newTagRows(final int limit) {

@@ -38,7 +38,7 @@ public class ExtendedDatasetVersionRow extends DatasetVersionRow {
       UUID runUuid,
       @NonNull final String namespaceName,
       @NonNull final String datasetName) {
-    super(uuid, createdAt, datasetUuid, version, fieldUuids, runUuid);
+    super(uuid, createdAt, datasetUuid, version, fieldUuids, runUuid, null);
     this.namespaceName = namespaceName;
     this.datasetName = datasetName;
   }

@@ -16,6 +16,7 @@ package marquez.service.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -25,6 +26,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import marquez.common.models.NamespaceName;
 import marquez.common.models.OwnerName;
+import marquez.db.models.NamespaceOwnershipRow;
 
 @Getter
 @AllArgsConstructor
@@ -35,6 +37,9 @@ public class Namespace {
   @NonNull Instant updatedAt;
   @Setter @NonNull OwnerName ownerName;
   @Nullable String description;
+
+  @JsonIgnore
+  public List<NamespaceOwnershipRow> owners;
 
   public Namespace(UUID uuid, NamespaceName name, Instant createdAt, Instant updatedAt,
       String description) {

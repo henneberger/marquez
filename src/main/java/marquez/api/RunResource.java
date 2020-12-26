@@ -39,7 +39,7 @@ public class RunResource extends AbstractResource {
   @Path("/")
   @Produces(APPLICATION_JSON)
   public Response get() throws MarquezServiceException {
-    final Run run = serviceFactory.getRunService().getRun(runId).orElseThrow(() -> new RunNotFoundException(runId));
+    final Run run = serviceFactory.getRunService().get(runId).orElseThrow(() -> new RunNotFoundException(runId));
     return Response.ok(run).build();
   }
 
@@ -90,7 +90,7 @@ public class RunResource extends AbstractResource {
   Response markRunAs(@NonNull RunState runState, @QueryParam("at") String atAsIso)
       throws MarquezServiceException {
 
-    serviceFactory.getRunService().markRunAs(runId, runState, Utils.toInstant(atAsIso));
-    return get();
+    Run run = serviceFactory.getRunStateService().markRunAs(runId, runState, Utils.toInstant(atAsIso));
+    return Response.ok(run).build();
   }
 }

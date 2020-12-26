@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.net.URL;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,11 +33,15 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import marquez.api.exceptions.RunNotFoundException;
 import marquez.common.Utils;
 import marquez.common.models.DatasetId;
+import marquez.common.models.DatasetName;
+import marquez.common.models.DatasetVersionId;
 import marquez.common.models.JobName;
 import marquez.common.models.JobVersionId;
 import marquez.common.models.NamespaceName;
+import marquez.common.models.RunId;
 import marquez.db.DatasetDao;
 import marquez.db.JobContextDao;
 import marquez.db.JobDao;
@@ -44,16 +49,19 @@ import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
 import marquez.db.RunDao;
 import marquez.db.models.DatasetRow;
+import marquez.db.models.DatasetVersionRow;
 import marquez.db.models.ExtendedJobVersionRow;
 import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.db.models.JobVersionRow;
+import marquez.service.RunTransitionListener.RunInput;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.mappers.Mapper;
 import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
 import marquez.service.models.Namespace;
+import marquez.service.models.Run;
 import marquez.service.models.Version;
 
 @Slf4j
@@ -163,13 +171,62 @@ public class JobService implements ServiceMetrics {
               final List<DatasetRow> inputRows = findDatasetRows(jobMeta.getInputs());
 
               // associate new input datasets with job version
-              runService.updateRunInputDatasets(
-                  runId.getValue(), inputRows, namespaceName, jobName, jobVersionUuid);
+//              runService.updateRunInputDatasets(
+//                  runId.getValue(), inputRows, namespaceName, jobName, jobVersionUuid);
 
               // associate the new job version with the existing job run
               final Instant updatedAt = Instant.now();
-              runService.updateJobVersionUuid(runId.getValue(), updatedAt, jobVersionUuid);
+              updateJobVersionUuid(runId.getValue(), updatedAt, jobVersionUuid);
             });
+  }
+
+
+  public void updateJobVersionUuid(UUID runId, Instant updatedAt, @NonNull UUID newJobVersionUuid) {
+//    final Run runRow = get(runId);
+//    runDao.updateJobVersionUuid(runRow.getId().getValue(), updatedAt, newJobVersionUuid);
+//    log.info("Successfully associated run '{}' with version '{}'.", runId, newJobVersionUuid);
+  }
+  public void updateRunInputDatasets(
+      UUID runUuid,
+      List<DatasetRow> inputRows,
+      NamespaceName namespaceName,
+      JobName jobName,
+      UUID jobVersionUuid) {
+//    if (inputRows.isEmpty()) {
+//      return;
+//    }
+//    List<RunInput> runInputs = new ArrayList<>();
+//    for (DatasetRow inputDataset : inputRows) {
+//      Optional<DatasetVersionRow> version =
+//          datasetVersionDao.findLatestDatasetByUuid(inputDataset.getUuid());
+//      if (version.isPresent()) {
+//        DatasetVersionRow row = version.get();
+//        runDao.updateInputVersions(runUuid, version.get().getUuid());
+//        runInputs.add(
+//            new RunInput(
+//                new DatasetVersionId(
+//                    namespaceName, DatasetName.of(inputDataset.getName()), row.getUuid())));
+//      } else {
+//        log.error(
+//            "Input dataset version could not be found during run input update. Input Dataset ID: {}",
+//            inputDataset.getUuid());
+//      }
+//    }
+//    Optional<Run> runRow = runDao.findBy(runUuid);
+//    if (runRow.isEmpty()) {
+//      throw new RunNotFoundException(RunId.of(runUuid));
+//    }
+//    Run run = runRow.get();
+//    notify(
+//        new JobInputUpdate(
+//            RunId.of(runUuid),
+//            new RunMeta(
+//                RunId.of(runUuid),
+//                run.getNominalStartTime().orElse(null),
+//                run.getNominalEndTime().orElse(null),
+//                Mapper.toRunArgs(run.getArgs())),
+//            new JobVersionId(namespaceName, jobName, jobVersionUuid),
+//            runInputs));
   }
 
   private JobContextRow getOrCreateJobContextRow(ImmutableMap<String, String> context) {
@@ -321,7 +378,7 @@ public class JobService implements ServiceMetrics {
         datasetDao.findAllIn(jobVersionRow.getOutputUuids()).stream()
             .map(Mapper::toDatasetId)
             .collect(toImmutableSet());
-    final ExtendedRunRow runRow =
+    final Run runRow =
         jobVersionRow
             .getLatestRunUuid()
             .map(latestRunUuid -> runDao.findBy(latestRunUuid).get())

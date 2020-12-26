@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -51,7 +52,6 @@ import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
 import marquez.db.RunArgsDao;
 import marquez.db.RunDao;
-import marquez.db.RunStateDao;
 import marquez.db.models.ExtendedJobVersionRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
@@ -149,7 +149,6 @@ public class JobServiceTest {
   @Mock private JobContextDao jobContextDao;
   @Mock private RunDao runDao;
   @Mock private RunArgsDao runArgsDao;
-  @Mock private RunStateDao runStateDao;
   private JobService jobService;
 
   private static List<JobInputUpdate> jobInputUpdates = Lists.newArrayList();
@@ -181,12 +180,8 @@ public class JobServiceTest {
     runService =
         new RunService(
             jobVersionDao,
-            datasetDao,
-            runArgsDao,
             runDao,
-            datasetVersionDao,
-            runStateDao,
-            Lists.newArrayList(listener));
+            new RunStateService(runDao, ImmutableList.of(listener)));
     jobService =
         new JobService(
             namespaceDao, datasetDao, jobDao, jobVersionDao, jobContextDao, runDao, runService);

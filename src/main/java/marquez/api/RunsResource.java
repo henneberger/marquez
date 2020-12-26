@@ -8,6 +8,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import java.net.URI;
+import java.util.List;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -74,7 +75,7 @@ public class RunsResource extends AbstractResource {
     throwIfNotExists(namespaceName);
     throwIfNotExists(namespaceName, jobName);
 
-    final ImmutableList<Run> runs = serviceFactory.getRunService().getAllRunsFor(namespaceName, jobName, limit, offset);
+    final List<Run> runs = serviceFactory.getRunService().getAllRunsFor(namespaceName, jobName, limit, offset);
     return Response.ok(new Runs(runs)).build();
   }
 
@@ -89,6 +90,6 @@ public class RunsResource extends AbstractResource {
   static class Runs {
     @NonNull
     @JsonProperty("runs")
-    ImmutableList<Run> value;
+    List<Run> value;
   }
 }

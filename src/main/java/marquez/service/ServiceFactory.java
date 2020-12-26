@@ -16,13 +16,13 @@ import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
 import marquez.db.RunArgsDao;
 import marquez.db.RunDao;
-import marquez.db.RunStateDao;
 import marquez.db.SourceDao;
 import marquez.db.TagDao;
 import marquez.service.models.Tag;
 import org.jdbi.v3.core.Jdbi;
 
 public class ServiceFactory {
+
   @Getter private NamespaceDao namespaceDao;
   @Getter private SourceDao sourceDao;
   @Getter private DatasetDao datasetDao;
@@ -33,7 +33,6 @@ public class ServiceFactory {
   @Getter private JobContextDao jobContextDao;
   @Getter private RunDao runDao;
   @Getter private RunArgsDao runArgsDao;
-  @Getter private RunStateDao runStateDao;
   @Getter private TagDao tagDao;
   @Getter private OpenLineageDao lineageDao;
 
@@ -43,9 +42,10 @@ public class ServiceFactory {
   @Getter private JobService jobService;
   @Getter private TagService tagService;
   @Getter private RunService runService;
-  
+  @Getter private RunStateService runStateService;
+
   protected ServiceFactory() {
-    
+
   }
 
   public ServiceFactory(@NonNull Jdbi jdbi,
@@ -62,7 +62,6 @@ public class ServiceFactory {
     this.jobContextDao = jdbi.onDemand(JobContextDao.class);
     this.runDao = jdbi.onDemand(RunDao.class);
     this.runArgsDao = jdbi.onDemand(RunArgsDao.class);
-    this.runStateDao = jdbi.onDemand(RunStateDao.class);
     this.tagDao = jdbi.onDemand(TagDao.class);
     this.lineageDao = new OpenLineageDao(con, this, runTransitionListeners);
     this.namespaceService = new NamespaceService(namespaceDao);
@@ -70,15 +69,13 @@ public class ServiceFactory {
     this.datasetService =
         new DatasetService(
             namespaceDao, sourceDao, datasetDao, datasetFieldDao, datasetVersionDao, tagDao);
+    this.runStateService = new RunStateService(runDao, runTransitionListeners);
     this.runService =
         new RunService(
             jobVersionDao,
-            datasetDao,
-            runArgsDao,
             runDao,
-            datasetVersionDao,
-            runStateDao,
-            runTransitionListeners);
+            runStateService
+            );
 
     this.jobService =
         new JobService(

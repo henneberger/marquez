@@ -53,7 +53,7 @@ public class ExtendedJobVersionRow extends JobVersionRow {
         outputUuids,
         location,
         version,
-        latestRunUuid);
+        latestRunUuid, null, null, null);
     this.context = context;
     this.namespaceName = namespaceName;
     this.name = name;

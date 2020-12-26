@@ -34,7 +34,7 @@ public interface SourceDao extends SqlObject {
   default Source upsert(SourceRow sourceRow) {
     return withHandle(
         handle -> {
-          String upsert =
+          StringBuilder upsert = new StringBuilder(
               "INSERT INTO sources ("
                   + "type, "
                   + "created_at, "
@@ -48,18 +48,18 @@ public interface SourceDao extends SqlObject {
                   + ":updatedAt, "
                   + ":name, "
                   + ":connectionUrl, "
-                  + ":description) ON CONFLICT(name) DO"
-                  + " UPDATE SET "
+                  + ":description)"
+                  + " ON CONFLICT(name) DO UPDATE SET "
                   + "type = :type"
                   + ", updated_at = :updatedAt"
                   + ", name = :name"
-                  + ", connection_url = :connectionUrl";
+                  + ", connection_url = :connectionUrl ");
           if (sourceRow.getDescription() != null) {
-            upsert += ", description = :description";
+            upsert.append(", description = :description ");
           }
-          upsert += " RETURNING uuid, type, created_at, updated_at, name, connection_url, description";
+          upsert.append(" RETURNING uuid, type, created_at, updated_at, name, connection_url, description");
           return handle
-              .createQuery(upsert)
+              .createQuery(upsert.toString())
               .bind("createdAt", Instant.now())
               .bind("updatedAt", Instant.now())
               .bindBean(sourceRow)

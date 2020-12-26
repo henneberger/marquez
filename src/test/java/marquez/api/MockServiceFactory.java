@@ -9,6 +9,7 @@ import marquez.service.DatasetService;
 import marquez.service.JobService;
 import marquez.service.NamespaceService;
 import marquez.service.RunService;
+import marquez.service.RunStateService;
 import marquez.service.ServiceFactory;
 import marquez.service.SourceService;
 import marquez.service.TagService;
@@ -30,6 +31,8 @@ public class MockServiceFactory extends ServiceFactory {
   private TagService tagService = mock(TagService.class);
   @Builder.Default
   private RunService runService = mock(RunService.class);
+  @Builder.Default
+  private RunStateService runStateService = mock(RunStateService.class);
 
   @Override
   public RunService getRunService() {
@@ -59,5 +62,9 @@ public class MockServiceFactory extends ServiceFactory {
   @Override
   public TagService getTagService() {
     return tagService;
+  }
+  @Override
+  public RunStateService getRunStateService() {
+    return runStateService;
   }
 }

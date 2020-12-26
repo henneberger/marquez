@@ -34,7 +34,7 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 public interface NamespaceDao extends SqlObject {
   default Namespace upsert(UpsertNamespaceFragment fragment) {
     return withHandle(
-        handle -> {
+        h -> h.inTransaction(handle -> {
           String upsert =
               "INSERT INTO namespaces (created_at, updated_at, name, description) "
                   + "VALUES (:createdAt, :updatedAt, :name, :description) ON CONFLICT(name)"
@@ -46,18 +46,17 @@ public interface NamespaceDao extends SqlObject {
               .map(new NamespaceMapper())
               .one();
 
-          //Rather than handle it as a trigger, get the current name and update it
           if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getOwnerName())) {
             if (fragment.getCurrentOwnerName().isPresent()) {
               String ownerUpsert =
                   "INSERT INTO owners (created_at, name) " + "VALUES (:createdAt, :name) "
                       + "ON CONFLICT(name) DO UPDATE SET name = EXCLUDED.name RETURNING uuid";
               UUID ownerUuid = handle
-                .createQuery(ownerUpsert)
-                .bind("createdAt", Instant.now())
-                .bind("name", fragment.getCurrentOwnerName().orElse(null))
-                .mapTo(UUID.class)
-                .one();
+                  .createQuery(ownerUpsert)
+                  .bind("createdAt", Instant.now())
+                  .bind("name", fragment.getCurrentOwnerName().orElse(null))
+                  .mapTo(UUID.class)
+                  .one();
 
               String ownershipUpsert =
                   "INSERT INTO namespace_ownerships (started_at, namespace_uuid, owner_uuid) "
@@ -84,7 +83,7 @@ public interface NamespaceDao extends SqlObject {
           }
 
           return namespace;
-        });
+        }));
   }
 
   default boolean isChangeOwnership(Optional<String> fragment, OwnerName namespace) {

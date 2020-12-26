@@ -106,7 +106,7 @@ public class DatasetResourceTest {
     final DbTable dbTable = toDbTable(DB_TABLE_ID, dbTableMeta);
 
     when(namespaceService.exists(NAMESPACE_NAME)).thenReturn(true);
-    when(runService.runExists(RUN_ID)).thenReturn(true);
+    when(runService.exists(RUN_ID)).thenReturn(true);
     when(datasetService.createOrUpdate(NAMESPACE_NAME, DB_TABLE_NAME, dbTableMeta))
         .thenReturn(dbTable);
 
@@ -123,7 +123,7 @@ public class DatasetResourceTest {
     final DbTable dbTable = toDbTable(DB_TABLE_ID, dbTableMeta);
 
     when(namespaceService.exists(NAMESPACE_NAME)).thenReturn(true);
-    when(runService.runExists(runIdDoesNotExist)).thenReturn(false);
+    when(runService.exists(runIdDoesNotExist)).thenReturn(false);
 
     assertThatExceptionOfType(RunNotFoundException.class)
         .isThrownBy(

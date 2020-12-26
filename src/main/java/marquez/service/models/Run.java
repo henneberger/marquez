@@ -14,71 +14,93 @@
 
 package marquez.service.models;
 
-import com.google.common.collect.ImmutableMap;
+import static java.time.temporal.ChronoUnit.MILLIS;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
+import marquez.db.models.DatasetVersionRow;
+import marquez.db.models.ExtendedDatasetVersionRow;
+import marquez.db.models.JobVersionRow;
+import marquez.db.models.RunArgsRow;
 
 @EqualsAndHashCode
 @ToString
+@AllArgsConstructor
 public final class Run {
   @Getter private final RunId id;
   @Getter private final Instant createdAt;
   @Getter private final Instant updatedAt;
-  @Nullable private final Instant nominalStartTime;
-  @Nullable private final Instant nominalEndTime;
-  @Getter private final RunState state;
-  @Nullable private final Instant startedAt;
-  @Nullable private final Instant endedAt;
-  @Nullable private final Long durationMs;
-  @Getter private final ImmutableMap<String, String> args;
+  @JsonIgnore
+  @Getter
+  public JobVersionRow jobVersion;
+  @JsonIgnore
+  @Getter
+  public RunArgsRow runArgs;
 
-  public Run(
-      @NonNull final RunId id,
-      @NonNull final Instant createdAt,
-      @NonNull final Instant updatedAt,
-      @Nullable final Instant nominalStartTime,
-      @Nullable final Instant nominalEndTime,
-      @NonNull final RunState state,
-      @Nullable final Instant startedAt,
-      @Nullable final Instant endedAt,
-      @Nullable final Long durationMs,
-      @Nullable final ImmutableMap<String, String> args) {
-    this.id = id;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-    this.nominalStartTime = nominalStartTime;
-    this.nominalEndTime = nominalEndTime;
-    this.state = state;
-    this.startedAt = startedAt;
-    this.endedAt = endedAt;
-    this.durationMs = durationMs;
-    this.args = (args == null) ? ImmutableMap.of() : args;
+  @Nullable private final Optional<Instant> nominalStartTime;
+  @Nullable private final Optional<Instant> nominalEndTime;
+
+  @JsonIgnore
+  @Getter
+  public RunStateRow currentState;
+
+  @JsonIgnore
+  @Getter
+  public RunStateRow startState;
+
+  @JsonIgnore
+  @Getter
+  public RunStateRow endState;
+
+  @JsonIgnore
+  @Getter
+  public List<DatasetVersionRow> inputs;
+
+  @JsonIgnore
+  @Getter
+  public List<ExtendedDatasetVersionRow> outputs;
+
+
+  public RunState getState() {
+    if (currentState != null) {
+      return currentState.state;
+    }
+    return null;
   }
-
   public Optional<Instant> getNominalStartTime() {
-    return Optional.ofNullable(nominalStartTime);
+    return nominalStartTime;
   }
 
   public Optional<Instant> getNominalEndTime() {
-    return Optional.ofNullable(nominalEndTime);
+    return nominalEndTime;
   }
 
   public Optional<Instant> getStartedAt() {
-    return Optional.ofNullable(startedAt);
+    if (startState != null) {
+      return Optional.ofNullable(startState.transitionedAt);
+    }
+    return Optional.empty();
   }
 
   public Optional<Instant> getEndedAt() {
-    return Optional.ofNullable(endedAt);
+    if (endState != null) {
+      return Optional.ofNullable(endState.transitionedAt);
+    }
+    return Optional.empty();
   }
 
   public Optional<Long> getDurationMs() {
-    return Optional.ofNullable(durationMs);
+    return this.getEndedAt()
+        .flatMap(
+            endedAt -> getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
   }
 }

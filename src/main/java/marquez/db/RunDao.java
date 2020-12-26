@@ -21,102 +21,162 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import marquez.db.mappers.ExtendedRunRowMapper;
-import marquez.db.models.ExtendedRunRow;
-import marquez.db.models.RunRow;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
+import marquez.common.models.RunState;
+import marquez.db.mappers.DatasetVersionRowMapper;
+import marquez.db.mappers.RunMapper;
+import marquez.db.models.DatasetVersionRow;
+import marquez.db.models.ExtendedDatasetVersionRow;
+import marquez.db.models.ExtendedJobVersionRow;
+import marquez.service.models.Run;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
-import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 public interface RunDao extends SqlObject {
   @CreateSqlObject
   JobVersionDao createJobVersionDao();
+  @CreateSqlObject
+  DatasetVersionDao createDatasetVersionDao();
 
-  @Transaction
-  default void insertWith(RunRow row, List<UUID> inputVersionUuids) {
-    insert(row);
+  default Run create(RunFragment runFragment) {
+    return withHandle(c->
+        c.inTransaction(handle -> {
+          UUID runArgsUuid = null;
+          if (runFragment.runArgs != null) {
+            runArgsUuid = handle
+                .createQuery("INSERT INTO run_args (created_at, args, checksum) "
+                    + "VALUES (:createdAt, :args, :checksum) ON CONFLICT(checksum) DO UPDATE SET "
+                    + "args = :args RETURNING uuid")
+                .bind("createdAt", runFragment.runArgs.createdAt)
+                .bind("args", runFragment.runArgs.args)
+                .bind("checksum", runFragment.runArgs.checksum)
+                .mapTo(UUID.class)
+                .one();
+          }
+
+          String runQuery = "INSERT INTO runs ("
+              + "created_at, "
+              + "updated_at, "
+              + "job_version_uuid, "
+              + "run_args_uuid, "
+              + "nominal_start_time, "
+              + "nominal_end_time,"
+              + "current_run_state"
+              + ") VALUES ("
+              + ":createdAt, "
+              + ":updatedAt, "
+              + ":jobVersion.uuid, "
+              + ":runArgsUuid, "
+              + ":nominalStartTime, "
+              + ":nominalEndTime,"
+              + ":runState.state"
+              + ") RETURNING uuid";
+
+          UUID runUuid = handle.createQuery(runQuery)
+              .bindBean(runFragment)
+              .bind("runArgsUuid", runArgsUuid)
+              .mapTo(UUID.class)
+              .one();
+
+          String runState = "INSERT INTO run_states (transitioned_at, run_uuid, state)"
+              + "VALUES (:transitionedAt, :runUuid, :state) RETURNING uuid";
+
+          UUID runStateUuid = handle.createQuery(runState)
+              .bindBean(runFragment.runState)
+              .bind("runUuid", runUuid)
+              .mapTo(UUID.class)
+              .one();
+//
+//          //Circular reference chain so we must perform an update
+//          String updateState = "UPDATE runs "
+//              + "SET updated_at = :updatedAt, "
+//              + "    start_run_state_uuid = :startRunStateUuid "
+//              + "WHERE uuid = :uuid";
+//
+//          handle.createUpdate(updateState)
+//              .bind("updatedAt", Instant.now())
+//              .bind("startRunStateUuid", runStateUuid)
+//              .bind("uuid", runUuid)
+//              .execute();
+
+          return findBy(runUuid).get();
+        }));
   }
 
-  @Transaction
-  default void insert(RunRow row) {
-    withHandle(
-        handle ->
-            handle
-                .createUpdate(
-                    "INSERT INTO runs ("
-                        + "uuid, "
-                        + "created_at, "
-                        + "updated_at, "
-                        + "job_version_uuid, "
-                        + "run_args_uuid, "
-                        + "nominal_start_time, "
-                        + "nominal_end_time"
-                        + ") VALUES ("
-                        + ":uuid, "
-                        + ":createdAt, "
-                        + ":updatedAt, "
-                        + ":jobVersionUuid, "
-                        + ":runArgsUuid, "
-                        + ":nominalStartTime, "
-                        + ":nominalEndTime)")
-                .bindBean(row)
-                .execute());
-    // Input versions
-    row.getInputVersionUuids()
-        .forEach(inputVersionUuid -> updateInputVersions(row.getUuid(), inputVersionUuid));
-    // Latest run
-    final Instant updateAt = row.getCreatedAt();
-    createJobVersionDao().updateLatestRun(row.getJobVersionUuid(), updateAt, row.getUuid());
+  default Optional<Run> createState(RunStateCreateFragment fragment, Function<UUID, Optional<Run>> retriever) {
+    UUID runUuid = withHandle(h -> h.inTransaction(handle-> {
+      //1. Insert into run_state
+      UUID runStateUuid = handle
+          .createQuery("INSERT INTO run_states (transitioned_at, run_uuid, state)"
+              + "VALUES (:transitionedAt, :runId, :state) returning uuid")
+          .bindBean(fragment)
+          .mapTo(UUID.class)
+          .one();
+
+      //2. Update run w/ denormalized run state
+      StringBuilder updateRun = new StringBuilder("UPDATE runs SET current_run_state = :state, "
+          + "updated_at = :updatedAt");
+      /*Note: there is a legacy bug of repeated RUNNING states will update the started date to the most recent*/
+      switch (fragment.state) {
+        case NEW:
+          break;
+        case RUNNING:
+          updateRun.append(", start_run_state_uuid = :currentStateUuid");
+          break;
+        case COMPLETED:
+        case ABORTED:
+        case FAILED:
+          updateRun.append(", end_run_state_uuid = :currentStateUuid");
+          break;
+      }
+
+      updateRun.append(" where uuid = :uuid RETURNING uuid");
+
+      return handle
+          .createQuery(updateRun.toString())
+          .bindBean(fragment)
+          .bind("currentStateUuid", runStateUuid)
+          .bind("updatedAt", fragment.transitionedAt)
+          .bind("uuid", fragment.runId)
+          .mapTo(UUID.class)
+          .one();
+
+      //TODO: Is this valid? What does the last modified date signify?
+      // Modified
+//      if (complete && outputVersionUuids != null && outputVersionUuids.size() > 0) {
+//        createDatasetDao().updateLastModifiedAt(outputVersionUuids, updateAt);
+//      }
+    }));
+
+    return retriever.apply(runUuid);
   }
 
-  @Transaction
-  default void updateJobVersionUuid(UUID rowUuid, Instant updatedAt, UUID jobVersionUuid) {
-    withHandle(
-        handle ->
-            handle
-                .createUpdate(
-                    "UPDATE runs "
-                        + "SET updated_at = :updatedAt, "
-                        + "    job_version_uuid = :jobVersionUuid "
-                        + "WHERE uuid = :rowUuid")
-                .bind("updatedAt", updatedAt)
-                .bind("jobVersionUuid", jobVersionUuid)
-                .bind("rowUuid", rowUuid)
-                .execute());
-    createJobVersionDao().updateLatestRun(jobVersionUuid, updatedAt, rowUuid);
+  @AllArgsConstructor
+  @Builder
+  @Getter
+  public static class RunStateCreateFragment {
+    public UUID runId;
+    public RunState state;
+    public Instant transitionedAt;
   }
-
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM runs WHERE uuid = :rowUuid)")
   boolean exists(UUID rowUuid);
 
+  //todo: how to update this table?
   @SqlUpdate(
       "INSERT INTO runs_input_mapping (run_uuid, dataset_version_uuid) "
           + "VALUES (:runUuid, :datasetVersionUuid) ON CONFLICT DO NOTHING")
   void updateInputVersions(UUID runUuid, UUID datasetVersionUuid);
-
-  @SqlUpdate(
-      "UPDATE runs "
-          + "SET updated_at = :updatedAt, "
-          + "    current_run_state = :currentRunState "
-          + "WHERE uuid = :rowUuid")
-  void updateRunState(UUID rowUuid, Instant updatedAt, String currentRunState);
-
-  @SqlUpdate(
-      "UPDATE runs "
-          + "SET updated_at = :updatedAt, "
-          + "    start_run_state_uuid = :startRunStateUuid "
-          + "WHERE uuid = :rowUuid")
-  void updateStartState(UUID rowUuid, Instant updatedAt, UUID startRunStateUuid);
-
-  @SqlUpdate(
-      "UPDATE runs "
-          + "SET updated_at = :updatedAt, "
-          + "    end_run_state_uuid = :endRunStateUuid "
-          + "WHERE uuid = :rowUuid")
-  void updateEndState(UUID rowUuid, Instant updatedAt, UUID endRunStateUuid);
 
   static final String SELECT_RUN =
       "SELECT r.*, ra.args, rs_s.transitioned_at as "
@@ -131,13 +191,45 @@ public interface RunDao extends SqlObject {
           + "LEFT JOIN run_args AS ra"
           + "  ON (ra.uuid = r.run_args_uuid) "
           + "LEFT JOIN run_states AS rs_s"
-          + "  ON (rs_s.uuid = r.start_run_state_uuid) "
+          + "  ON (rs_s.uuid = r.start_run_state_uuid) " //todo: this is also likely not right, should be current state
           + "LEFT JOIN run_states AS rs_e"
           + "  ON (rs_e.uuid = r.end_run_state_uuid) ";
 
   @SqlQuery(SELECT_RUN + " WHERE r.uuid = :rowUuid")
-  @RegisterRowMapper(ExtendedRunRowMapper.class)
-  Optional<ExtendedRunRow> findBy(UUID rowUuid);
+  @RegisterRowMapper(RunMapper.class)
+  Optional<Run> findBy(UUID rowUuid);
+
+  default Optional<Run> findByWithDatasets(UUID rowUuid) {
+    return withHandle(handle-> {
+      Optional<Run> run = handle.createQuery(SELECT_RUN + " WHERE r.uuid = :rowUuid")
+          .bind("rowUuid", rowUuid)
+          .map(new RunMapper())
+          .findOne();
+      if (run.isEmpty()) {
+        return run;
+      }
+
+      run.get().jobVersion = createJobVersionDao()
+          .findBy(run.get().getJobVersion().getUuid())
+          .orElseThrow();
+
+      run.get().outputs = createDatasetVersionDao()
+          .findByRunId(run.get().getId().getValue());
+
+      run.get().inputs = handle.createQuery(
+          "SELECT dv.* "
+          + " FROM runs_input_mapping i"
+          + " INNER JOIN dataset_versions dv on i.dataset_version_uuid = dv.uuid"
+          + " WHERE i.run_uuid = :rowUuid")
+          .bind("rowUuid", rowUuid)
+          .map(new DatasetVersionRowMapper())
+          .list();
+
+      //todo assure type safety for objects. Assure notnull-ness
+
+      return run;
+    });
+  }
 
   @SqlQuery(
       SELECT_RUN
@@ -147,9 +239,48 @@ public interface RunDao extends SqlObject {
           + "WHERE n.name = :namespace and j.name = :jobName "
           + "ORDER BY r.created_at DESC "
           + "LIMIT :limit OFFSET :offset")
-  @RegisterRowMapper(ExtendedRunRowMapper.class)
-  List<ExtendedRunRow> findAll(String namespace, String jobName, int limit, int offset);
+  @RegisterRowMapper(RunMapper.class)
+  List<Run> findAll(String namespace, String jobName, int limit, int offset);
 
   @SqlQuery("SELECT COUNT(*) FROM runs")
   int count();
+
+  @Builder
+  @AllArgsConstructor
+  @Getter
+  public static class RunFragment {
+    public UUID uuid;
+    public Instant createdAt;
+    public Instant updatedAt;
+    public JobVersionFragment jobVersion;
+    public RunArgsFragment runArgs;
+    public Optional<Instant> nominalStartTime;
+    public Optional<Instant> nominalEndTime;
+    public @NotNull RunStateFragment runState; //required
+  }
+
+  @Builder
+  @AllArgsConstructor
+  @Getter
+  public static class RunStateFragment {
+    public Instant transitionedAt;
+    public RunState state;
+  }
+
+  @Builder
+  @ToString
+  @AllArgsConstructor
+  @Getter
+  public static class RunArgsFragment {
+    @NonNull public Instant createdAt;
+    @NonNull public String args;
+    @NonNull public String checksum;
+  }
+
+  @Builder
+  @AllArgsConstructor
+  @Getter
+  public static class JobVersionFragment {
+    public UUID uuid;
+  }
 }

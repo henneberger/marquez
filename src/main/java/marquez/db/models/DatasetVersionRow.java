@@ -14,29 +14,36 @@
 
 package marquez.db.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
+import marquez.service.models.Dataset;
 
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
 @Builder
 public class DatasetVersionRow {
-  @Getter @NonNull private final UUID uuid;
-  @Getter @NonNull private final Instant createdAt;
-  @Getter @NonNull private final UUID datasetUuid;
-  @Getter @NonNull private final UUID version;
-  @Getter @NonNull private final List<UUID> fieldUuids;
+  @Getter @NotNull
+  private final UUID uuid;
+  @Getter @NotNull private final Instant createdAt;
+  @Getter @NotNull private final UUID datasetUuid;
+  @Getter @NotNull private final UUID version;
+  @Getter @NotNull private final List<UUID> fieldUuids;
   @Nullable private final UUID runUuid;
+
+  @JsonIgnore
+  @Getter
+  public Dataset dataset;
 
   public Optional<UUID> getRunUuid() {
     return Optional.ofNullable(runUuid);

@@ -91,12 +91,12 @@ public interface DatasetVersionDao {
 
   @SqlQuery(SELECT + "WHERE uuid = :uuid")
   Optional<DatasetVersionRow> findBy(UUID uuid);
-
-  @SqlQuery(
-      SELECT
-          + "INNER JOIN datasets AS d ON d.uuid = dv.dataset_uuid AND d.current_version_uuid = dv.uuid "
-          + "WHERE dv.dataset_uuid = :datasetUuid")
-  Optional<DatasetVersionRow> findLatestDatasetByUuid(UUID datasetUuid);
+//
+//  @SqlQuery(
+//      SELECT
+//          + "INNER JOIN datasets AS d ON d.uuid = dv.dataset_uuid AND d.current_version_uuid = dv.uuid "
+//          + "WHERE dv.dataset_uuid = :datasetUuid")
+//  Optional<DatasetVersionRow> findLatestDatasetByUuid(UUID datasetUuid);
 
   default Optional<DatasetVersionRow> find(String typeString, @Nullable UUID uuid) {
     if (uuid == null) {

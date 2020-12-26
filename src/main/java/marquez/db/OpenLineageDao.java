@@ -221,17 +221,17 @@ public class OpenLineageDao {
 //        .args("{}")
 //        .checksum(UUID.randomUUID().toString()) //there is a uniq const here :(
 //        .build());
-
-    sf.getRunDao().insert(RunRow.builder()
-        .createdAt(event.transitionTime.toInstant())
-        .updatedAt(event.transitionTime.toInstant())
-        .endedAt(event.transitionTime.toInstant())
-        .jobVersionUuid(versionUuid)
-//        .runArgsUuid(runArgsUuid)
-        .inputVersionUuids(inputs)
-        .uuid(runUuid)
-        .startedAt(event.transitionTime.toInstant())
-        .build());
+//
+//    sf.getRunDao().insert(RunRow.builder()
+//        .createdAt(event.transitionTime.toInstant())
+//        .updatedAt(event.transitionTime.toInstant())
+//        .endedAt(event.transitionTime.toInstant())
+//        .jobVersionUuid(versionUuid)
+////        .runArgsUuid(runArgsUuid)
+//        .inputVersionUuids(inputs)
+//        .uuid(runUuid)
+//        .startedAt(event.transitionTime.toInstant())
+//        .build());
 
     for (RunTransitionListener l : runTransitionListeners) {
       l.notify(JobInputUpdate.builder()

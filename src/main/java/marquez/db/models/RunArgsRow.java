@@ -15,18 +15,19 @@
 package marquez.db.models;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
 @AllArgsConstructor
 public class RunArgsRow {
-  @NonNull UUID uuid;
-  @NonNull Instant createdAt;
-  @NonNull String args;
-  @NonNull String checksum;
+  @NotNull UUID uuid;
+  @NotNull Instant createdAt;
+  @NotNull Map<String, String> args;
+  @NotNull String checksum;
 }

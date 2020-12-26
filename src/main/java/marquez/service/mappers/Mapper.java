@@ -14,14 +14,12 @@
 
 package marquez.service.mappers;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.time.temporal.ChronoUnit.MILLIS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.util.List;
@@ -41,7 +39,6 @@ import marquez.common.models.JobId;
 import marquez.common.models.JobName;
 import marquez.common.models.JobType;
 import marquez.common.models.NamespaceName;
-import marquez.common.models.OwnerName;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
 import marquez.common.models.SourceName;
@@ -54,10 +51,6 @@ import marquez.db.models.ExtendedRunRow;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.db.models.JobVersionRow;
-import marquez.db.models.OwnerRow;
-import marquez.db.models.RunArgsRow;
-import marquez.db.models.RunRow;
-import marquez.db.models.RunStateRow;
 import marquez.db.models.StreamVersionRow;
 import marquez.service.models.Dataset;
 import marquez.service.models.DatasetMeta;
@@ -67,18 +60,12 @@ import marquez.service.models.Job;
 import marquez.service.models.JobMeta;
 import marquez.service.models.Namespace;
 import marquez.service.models.Run;
-import marquez.service.models.RunMeta;
 import marquez.service.models.Stream;
 import marquez.service.models.StreamMeta;
-import marquez.service.models.Tag;
 import marquez.service.models.Version;
 
 public final class Mapper {
   private Mapper() {}
-
-  public static OwnerRow toOwnerRow(@NonNull final OwnerName name) {
-    return new OwnerRow(newRowUuid(), newTimestamp(), name.getValue());
-  }
 
   public static DatasetId toDatasetId(@NonNull final ExtendedDatasetRow row) {
     return new DatasetId(NamespaceName.of(row.getNamespaceName()), DatasetName.of(row.getName()));
@@ -208,7 +195,7 @@ public final class Mapper {
         datasetUuid,
         version.getValue(),
         fieldUuids,
-        meta.getRunId().map(RunId::getValue).orElse(null));
+        meta.getRunId().map(RunId::getValue).orElse(null), null);
   }
 
   private static DatasetVersionRow toStreamVersionRow(
@@ -232,7 +219,7 @@ public final class Mapper {
       @NonNull final ImmutableSet<DatasetId> outputs,
       @Nullable final String locationString,
       @NonNull final String contextString,
-      @Nullable final ExtendedRunRow runRow) {
+      @Nullable final Run runRow) {
     return new Job(
         toJobId(row),
         JobType.valueOf(row.getType()),
@@ -244,7 +231,7 @@ public final class Mapper {
         (locationString == null) ? null : Utils.toUrl(locationString),
         Utils.fromJson(contextString, new TypeReference<ImmutableMap<String, String>>() {}),
         row.getDescription().orElse(null),
-        (runRow == null) ? null : toRun(runRow));
+        runRow);
   }
 
   public static JobRow toJobRow(
@@ -287,67 +274,27 @@ public final class Mapper {
         outputs,
         (location == null) ? null : location.toString(),
         version.getValue(),
-        null);
+        null, null, null, null);
   }
 
   public static Run toRun(@NonNull final ExtendedRunRow row) {
-    Optional<Long> durationMs =
-        row.getEndedAt()
-            .flatMap(
-                endedAt -> row.getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
-    return new Run(
-        RunId.of(row.getUuid()),
-        row.getCreatedAt(),
-        row.getUpdatedAt(),
-        row.getNominalStartTime().orElse(null),
-        row.getNominalEndTime().orElse(null),
-        RunState.valueOf(row.getCurrentRunState().orElse(RunState.NEW.name())),
-        row.getStartedAt().orElse(null),
-        row.getEndedAt().orElse(null),
-        durationMs.orElse(null),
-        Utils.fromJson(row.getArgs(), new TypeReference<ImmutableMap<String, String>>() {}));
-  }
-
-  public static List<Run> toRuns(@NonNull final List<ExtendedRunRow> rows) {
-    return rows.stream().map(Mapper::toRun).collect(toImmutableList());
-  }
-
-  public static RunRow toRunRow(
-      @NonNull final UUID jobVersionUuid,
-      @NonNull final UUID runArgsUuid,
-      @NonNull final List<UUID> inputVersionUuids,
-      @NonNull final RunMeta runMeta) {
-    final Instant now = newTimestamp();
-    return new RunRow(
-        runMeta.getId().map(runId -> runId.getValue()).orElseGet(Mapper::newRowUuid),
-        now,
-        now,
-        jobVersionUuid,
-        runArgsUuid,
-        inputVersionUuids,
-        runMeta.getNominalStartTime().orElse(null),
-        runMeta.getNominalEndTime().orElse(null),
-        null,
-        null,
-        null,
-        null,
-        null);
-  }
-
-  public static RunArgsRow toRunArgsRow(
-      @NonNull final Map<String, String> args, @NonNull final String checksum) {
-    return new RunArgsRow(newRowUuid(), newTimestamp(), Utils.toJson(args), checksum);
-  }
-
-  public static RunStateRow toRunStateRow(
-      @NonNull final UUID runId,
-      @NonNull final RunState runState,
-      @Nullable Instant transitionedAt) {
-    return new RunStateRow(
-        newRowUuid(),
-        transitionedAt == null ? newTimestamp() : transitionedAt,
-        runId,
-        runState.name());
+    return null;
+//    Optional<Long> durationMs =
+//        row.getEndedAt()
+//            .flatMap(
+//                endedAt -> row.getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
+//    return new Run(
+//        RunId.of(row.getUuid()),
+//        row.getCreatedAt(),
+//        row.getUpdatedAt(),
+//        row.getNominalStartTime().orElse(null),
+//        row.getNominalEndTime().orElse(null),
+//        RunState.valueOf(row.getCurrentRunState().orElse(RunState.NEW.name())),
+//        row.getStartedAt().orElse(null),
+//        row.getEndedAt().orElse(null),
+//        durationMs.orElse(null),
+//        Utils.fromJson(row.getArgs(), new TypeReference<ImmutableMap<String, String>>() {}),
+//        );
   }
 
   private static UUID newRowUuid() {
@@ -356,16 +303,5 @@ public final class Mapper {
 
   public static Instant newTimestamp() {
     return Instant.now();
-  }
-
-  public static ImmutableMap<String, String> toRunArgs(String args) {
-    if (args == null) {
-      return null;
-    }
-    return Utils.fromJson(
-        args,
-        Utils.getMapper()
-            .getTypeFactory()
-            .constructMapType(ImmutableMap.class, String.class, String.class));
   }
 }

@@ -36,7 +36,7 @@ public class StreamVersionRow extends DatasetVersionRow {
       final List<UUID> fieldUuids,
       @Nullable final UUID runUuid,
       @NonNull final String schemaLocation) {
-    super(uuid, createdAt, datasetUuid, version, fieldUuids, runUuid);
+    super(uuid, createdAt, datasetUuid, version, fieldUuids, runUuid, null);
     this.schemaLocation = schemaLocation;
   }
 }

@@ -50,7 +50,7 @@ public final class NamespaceMapper implements RowMapper<Namespace> {
           timestampOrThrow(results, Columns.UPDATED_AT),
           stringOrNull(results, Columns.CURRENT_OWNER_NAME) == null ? null :
               OwnerName.of(stringOrNull(results, Columns.CURRENT_OWNER_NAME)),
-          stringOrNull(results, Columns.DESCRIPTION));
+          stringOrNull(results, Columns.DESCRIPTION), null);
     }
   }
 }

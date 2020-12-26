@@ -102,6 +102,6 @@ public class NamespaceResourceTest {
   static Namespace toNamespace(final NamespaceName namespaceName, final NamespaceMeta meta) {
     final Instant now = newTimestamp();
     return new Namespace(null,
-        namespaceName, now, now, meta.getOwnerName(), meta.getDescription().orElse(null));
+        namespaceName, now, now, meta.getOwnerName(), meta.getDescription().orElse(null),null);
   }
 }

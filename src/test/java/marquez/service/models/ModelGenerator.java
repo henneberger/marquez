@@ -52,6 +52,7 @@ import marquez.common.models.RunId;
 import marquez.common.models.RunState;
 import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
+import marquez.db.models.RunArgsRow;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}
@@ -66,7 +67,7 @@ public final class ModelGenerator extends Generator {
 
   public static Namespace newNamespaceWith(final NamespaceName namespaceName) {
     final Instant now = newTimestamp();
-    return new Namespace(null, namespaceName, now, now, newOwnerName(), newDescription());
+    return new Namespace(null, namespaceName, now, now, newOwnerName(), newDescription(), null);
   }
 
   public static Source newSource() {
@@ -179,13 +180,16 @@ public final class ModelGenerator extends Generator {
         runId,
         now,
         now,
-        runMeta.getNominalStartTime().orElse(null),
-        runMeta.getNominalEndTime().orElse(null),
-        runState,
+        null,
+        RunArgsRow.builder().args(newRunArgs()).build(),
+        runMeta.getNominalStartTime(),
+        runMeta.getNominalEndTime(),
+        RunStateRow.builder().state(runState).build(),
         null,
         null,
         null,
-        newRunArgs());
+        null
+        );
   }
 
   public static RunState newRunState() {

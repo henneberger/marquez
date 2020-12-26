@@ -5,7 +5,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 import marquez.common.models.DatasetVersionId;

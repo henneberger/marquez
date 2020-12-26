@@ -14,20 +14,26 @@
 
 package marquez.db.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import lombok.NonNull;
+import javax.validation.constraints.NotNull;
 import lombok.Value;
+import marquez.service.models.Owner;
 
 @Value
 public class NamespaceOwnershipRow {
-  @NonNull UUID uuid;
-  @NonNull Instant startedAt;
+  @NotNull UUID uuid;
+  @NotNull Instant startedAt;
   @Nullable Instant endedAt;
-  @NonNull UUID namespaceUuid;
-  @NonNull UUID ownerUuid;
+  @NotNull UUID namespaceUuid;
+  @NotNull UUID ownerUuid;
+
+  @JsonIgnore
+  public List<Owner> owners;
 
   public Optional<Instant> getEndedAt() {
     return Optional.ofNullable(endedAt);

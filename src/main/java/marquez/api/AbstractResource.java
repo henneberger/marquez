@@ -68,14 +68,14 @@ public abstract class AbstractResource {
       @NonNull NamespaceName namespaceName, @NonNull JobName jobName, @Nullable RunId runId)
       throws MarquezServiceException {
     if (runId != null) {
-      if (serviceFactory.getRunService().runExists(runId)) {
+      if (serviceFactory.getRunService().exists(runId)) {
         throw new RunAlreadyExistsException(namespaceName, jobName, runId);
       }
     }
   }
 
   void throwIfNotExists(@NonNull RunId runId) throws MarquezServiceException {
-    if (!serviceFactory.getRunService().runExists(runId)) {
+    if (!serviceFactory.getRunService().exists(runId)) {
       throw new RunNotFoundException(runId);
     }
   }

@@ -20,8 +20,9 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -38,12 +39,11 @@ import marquez.api.exceptions.NamespaceNotFoundException;
 import marquez.common.models.NamespaceName;
 import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.NamespaceServiceFragment;
 import marquez.service.models.Namespace;
-import marquez.service.models.NamespaceMeta;
 
 @Path("/api/v1")
 public class NamespaceResource extends AbstractResource {
-
   public NamespaceResource(ServiceFactory serviceFactory) {
     super(serviceFactory);
   }
@@ -58,7 +58,15 @@ public class NamespaceResource extends AbstractResource {
   public Response createOrUpdate(
       @PathParam("namespace") NamespaceName name, @Valid NamespaceMeta meta)
       throws MarquezServiceException {
-    final Namespace namespace = serviceFactory.getNamespaceService().createOrUpdate(name, meta);
+    Instant now = Instant.now();
+    NamespaceServiceFragment fragment = NamespaceServiceFragment.builder()
+        .name(name.getValue())
+        .updatedAt(now)
+        .createdAt(now)
+        .description(meta.getDescription())
+        .currentOwnerName(Optional.of(meta.getOwnerName().getValue()))
+        .build();
+    final Namespace namespace = serviceFactory.getNamespaceService().createOrUpdate(fragment);
     return Response.ok(namespace).build();
   }
 
@@ -70,7 +78,7 @@ public class NamespaceResource extends AbstractResource {
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("namespace") NamespaceName name) throws MarquezServiceException {
     final Namespace namespace =
-        serviceFactory.getNamespaceService().get(name).orElseThrow(() -> new NamespaceNotFoundException(name));
+        serviceFactory.getNamespaceService().get(name.getValue()).orElseThrow(() -> new NamespaceNotFoundException(name));
     return Response.ok(namespace).build();
   }
 

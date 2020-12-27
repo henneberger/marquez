@@ -45,14 +45,12 @@ import marquez.common.models.JobName;
 import marquez.common.models.JobVersionId;
 import marquez.common.models.NamespaceName;
 import marquez.db.DatasetDao;
-import marquez.db.DatasetVersionDao;
 import marquez.db.JobContextDao;
 import marquez.db.JobDao;
 import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
-import marquez.db.RunArgsDao;
 import marquez.db.RunDao;
-import marquez.db.models.ExtendedJobVersionRow;
+import marquez.db.models.ExtendedJobVersion;
 import marquez.db.models.JobContextRow;
 import marquez.db.models.JobRow;
 import marquez.service.RunTransitionListener.JobInputUpdate;
@@ -60,9 +58,9 @@ import marquez.service.RunTransitionListener.JobOutputUpdate;
 import marquez.service.RunTransitionListener.RunTransition;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Job;
-import marquez.service.models.JobMeta;
+import marquez.api.JobMeta;
 import marquez.service.models.Namespace;
-import marquez.service.models.Version;
+import marquez.api.Version;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,8 +106,8 @@ public class JobServiceTest {
           null);
 
   // JOB ROW
-  private static final JobRow JOB_ROW =
-      new JobRow(
+  private static final Job JOB_ROW =
+      new Job(
           newRowUuid(),
           BATCH.toString(),
           NOW,
@@ -123,8 +121,8 @@ public class JobServiceTest {
 
   // JOB VERSION ROW
   private static final JobContextRow JOB_CONTEXT_ROW = newJobContextRowWith(CONTEXT);
-  private static final ExtendedJobVersionRow JOB_VERSION_ROW =
-      new ExtendedJobVersionRow(
+  private static final ExtendedJobVersion JOB_VERSION_ROW =
+      new ExtendedJobVersion(
           JOB_VERSION_ROW_UUID,
           NOW,
           NOW,
@@ -143,12 +141,10 @@ public class JobServiceTest {
 
   @Mock private NamespaceDao namespaceDao;
   @Mock private DatasetDao datasetDao;
-  @Mock private DatasetVersionDao datasetVersionDao;
   @Mock private JobDao jobDao;
   @Mock private JobVersionDao jobVersionDao;
   @Mock private JobContextDao jobContextDao;
   @Mock private RunDao runDao;
-  @Mock private RunArgsDao runArgsDao;
   private JobService jobService;
 
   private static List<JobInputUpdate> jobInputUpdates = Lists.newArrayList();
@@ -183,8 +179,7 @@ public class JobServiceTest {
             runDao,
             new RunStateService(runDao, ImmutableList.of(listener)));
     jobService =
-        new JobService(
-            namespaceDao, datasetDao, jobDao, jobVersionDao, jobContextDao, runDao, runService);
+        new JobService(jobDao);
   }
 
   @Test

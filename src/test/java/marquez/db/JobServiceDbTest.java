@@ -51,7 +51,7 @@ import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
 import marquez.db.NamespaceDao.UpsertNamespaceFragment;
 import marquez.db.models.ExtendedDatasetVersionRow;
-import marquez.db.models.SourceRow;
+import marquez.service.models.SourceRow;
 import marquez.service.DatasetService;
 import marquez.service.JobService;
 import marquez.service.RunService;
@@ -64,14 +64,14 @@ import marquez.service.RunTransitionListener.RunTransition;
 import marquez.service.SourceService;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Dataset;
-import marquez.service.models.DbTableMeta;
+import marquez.api.DbTableMeta;
 import marquez.service.models.Job;
-import marquez.service.models.JobMeta;
+import marquez.api.JobMeta;
 import marquez.service.models.Namespace;
 import marquez.service.models.Run;
-import marquez.service.models.RunMeta;
+import marquez.api.RunMeta;
 import marquez.service.models.Source;
-import marquez.service.models.SourceMeta;
+import marquez.api.model.SourceMeta;
 import marquez.service.models.Tag;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.testing.JdbiRule;
@@ -109,7 +109,6 @@ public class JobServiceDbTest {
   private static JobVersionDao jobVersionDao;
   private static JobDao jobDao;
   private static JobContextDao contextDao;
-  private static RunArgsDao runArgsDao;
   private static RunDao runDao;
 
   private static RunTransitionListener listener;
@@ -127,7 +126,6 @@ public class JobServiceDbTest {
     jobVersionDao = jdbi.onDemand(JobVersionDao.class);
     jobDao = jdbi.onDemand(JobDao.class);
     contextDao = jdbi.onDemand(JobContextDao.class);
-    runArgsDao = jdbi.onDemand(RunArgsDao.class);
     runDao = jdbi.onDemand(RunDao.class);
 
     namespaceRow = newNamespaceRowWith(NAMESPACE_NAME);
@@ -151,9 +149,7 @@ public class JobServiceDbTest {
             runDao,
             runStateService);
 
-    jobService =
-        new JobService(
-            namespaceDao, datasetDao, jobDao, jobVersionDao, contextDao, runDao, runService);
+    jobService = new JobService(jobDao);
 
     datasetService =
         new DatasetService(

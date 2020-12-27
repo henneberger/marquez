@@ -14,40 +14,27 @@
 
 package marquez.service.models;
 
-import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import javax.annotation.Nullable;
-import lombok.NonNull;
-import lombok.Value;
-import marquez.common.models.SourceName;
-import marquez.common.models.SourceType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Value
+@AllArgsConstructor
+@Builder
+@Getter
+@Setter @ToString
 public class Source {
-  @JsonIgnore
-  @NonNull
-  UUID uuid;
-
-  @NonNull SourceType type;
-
-  @NonNull
-  @JsonUnwrapped
-  @JsonProperty(access = READ_ONLY)
-  SourceName name;
-
-  @NonNull Instant createdAt;
-  @NonNull Instant updatedAt;
-  @NonNull URI connectionUrl;
-  @Nullable String description;
-
-  public Optional<String> getDescription() {
-    return Optional.ofNullable(description);
-  }
+  private final UUID uuid;
+  private String type;
+  private String name;
+  private Instant createdAt;
+  private Instant updatedAt;
+  private String connectionUrl;
+  private Optional<String> description;
+  private List<Dataset> datasets;
 }

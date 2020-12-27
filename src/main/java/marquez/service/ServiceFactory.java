@@ -14,7 +14,6 @@ import marquez.db.JobContextDao;
 import marquez.db.JobDao;
 import marquez.db.JobVersionDao;
 import marquez.db.NamespaceDao;
-import marquez.db.RunArgsDao;
 import marquez.db.RunDao;
 import marquez.db.SourceDao;
 import marquez.db.TagDao;
@@ -22,7 +21,6 @@ import marquez.service.models.Tag;
 import org.jdbi.v3.core.Jdbi;
 
 public class ServiceFactory {
-
   @Getter private NamespaceDao namespaceDao;
   @Getter private SourceDao sourceDao;
   @Getter private DatasetDao datasetDao;
@@ -32,7 +30,6 @@ public class ServiceFactory {
   @Getter private JobVersionDao jobVersionDao;
   @Getter private JobContextDao jobContextDao;
   @Getter private RunDao runDao;
-  @Getter private RunArgsDao runArgsDao;
   @Getter private TagDao tagDao;
   @Getter private OpenLineageDao lineageDao;
 
@@ -61,14 +58,12 @@ public class ServiceFactory {
     this.jobVersionDao = jdbi.onDemand(JobVersionDao.class);
     this.jobContextDao = jdbi.onDemand(JobContextDao.class);
     this.runDao = jdbi.onDemand(RunDao.class);
-    this.runArgsDao = jdbi.onDemand(RunArgsDao.class);
     this.tagDao = jdbi.onDemand(TagDao.class);
     this.lineageDao = new OpenLineageDao(con, this, runTransitionListeners);
     this.namespaceService = new NamespaceService(namespaceDao);
     this.sourceService = new SourceService(sourceDao);
     this.datasetService =
-        new DatasetService(
-            namespaceDao, sourceDao, datasetDao, datasetFieldDao, datasetVersionDao, tagDao);
+        new DatasetService(datasetDao, datasetFieldDao, tagDao, datasetVersionDao);
     this.runStateService = new RunStateService(runDao, runTransitionListeners);
     this.runService =
         new RunService(
@@ -77,9 +72,7 @@ public class ServiceFactory {
             runStateService
             );
 
-    this.jobService =
-        new JobService(
-            namespaceDao, datasetDao, jobDao, jobVersionDao, jobContextDao, runDao, runService);
+    this.jobService = new JobService(jobDao);
     this.tagService = new TagService(tagDao);
     this.tagService.init(tags);
   }

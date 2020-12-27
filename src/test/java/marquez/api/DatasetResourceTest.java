@@ -39,7 +39,6 @@ import marquez.service.TagService;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Dataset;
 import marquez.service.models.DbTable;
-import marquez.service.models.DbTableMeta;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

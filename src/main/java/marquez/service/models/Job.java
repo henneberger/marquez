@@ -15,81 +15,30 @@
 package marquez.service.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import java.net.URL;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
-import lombok.EqualsAndHashCode;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.Setter;
 import lombok.ToString;
-import marquez.common.models.DatasetId;
-import marquez.common.models.JobId;
-import marquez.common.models.JobName;
-import marquez.common.models.JobType;
-import marquez.common.models.NamespaceName;
-import marquez.db.models.JobVersionRow;
 
-@EqualsAndHashCode
-@ToString
+@AllArgsConstructor
+@Builder
+@Getter
+@Setter @ToString
 public final class Job {
-  @Getter private final JobId id;
-  @Getter private final JobType type;
-  @Getter private final JobName name;
-  @Getter private final Instant createdAt;
-  @Getter private final Instant updatedAt;
-  @Getter private final NamespaceName namespace;
-  @Getter private final ImmutableSet<DatasetId> inputs;
-  @Getter private final ImmutableSet<DatasetId> outputs;
-  @Nullable private final URL location;
-  @Getter private final ImmutableMap<String, String> context;
-  @Nullable private final String description;
-  @Nullable private final Run latestRun;
-
-  @JsonIgnore
-  public List<JobVersionRow> versions;
-
-  @JsonIgnore
-  public Namespace namespace_;
-
-  public Job(
-      @NonNull final JobId id,
-      @NonNull final JobType type,
-      @NonNull final JobName name,
-      @NonNull final Instant createdAt,
-      @NonNull final Instant updatedAt,
-      @NonNull final ImmutableSet<DatasetId> inputs,
-      @NonNull final ImmutableSet<DatasetId> outputs,
-      @Nullable final URL location,
-      @Nullable final ImmutableMap<String, String> context,
-      @Nullable final String description,
-      @Nullable final Run latestRun) {
-    this.id = id;
-    this.type = type;
-    this.name = name;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-    this.namespace = id.getNamespace();
-    this.inputs = inputs;
-    this.outputs = outputs;
-    this.location = location;
-    this.context = (context == null) ? ImmutableMap.of() : context;
-    this.description = description;
-    this.latestRun = latestRun;
-  }
-
-  public Optional<URL> getLocation() {
-    return Optional.ofNullable(location);
-  }
-
-  public Optional<String> getDescription() {
-    return Optional.ofNullable(description);
-  }
-
-  public Optional<Run> getLatestRun() {
-    return Optional.ofNullable(latestRun);
-  }
+  private final UUID uuid;
+  private String type;
+  private String name;
+  private Instant createdAt;
+  private Instant updatedAt;
+  private Optional<URL> location;
+  private Optional<String> description;
+  public List<JobVersion> versions;
+  public Namespace namespace;
+  public JobVersion currentVersion;
 }

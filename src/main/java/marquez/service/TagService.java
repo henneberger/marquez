@@ -17,41 +17,41 @@ package marquez.service;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableSet;
+import java.time.Instant;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import marquez.common.models.TagName;
 import marquez.db.TagDao;
-import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.TagUpsertFragment;
 import marquez.service.models.Tag;
 
 @Slf4j
+@AllArgsConstructor
 public class TagService implements ServiceMetrics {
-  private final TagDao dao;
-
-  public TagService(@NonNull final TagDao dao) {
-    this.dao = dao;
-  }
-
-  public void init(@NonNull ImmutableSet<Tag> tags) throws MarquezServiceException {
+  private final TagDao tagDao;
+  public void init(@NonNull ImmutableSet<Tag> tags) {
     for (final Tag tag : tags) {
-      upsert(tag);
+      upsert(new TagUpsertFragment(
+          Instant.now(),
+          tag.getName(),
+          tag.getDescription()));
     }
   }
 
-  public Tag upsert(@NonNull Tag tag) throws MarquezServiceException {
-    dao.upsert(TagDao.UpsertTagFragment.build(tag));
-    log.info("Successfully created tag '{}'", tag.getName().getValue());
-    return tag;
+  public Tag upsert(@NonNull TagUpsertFragment tag) {
+    Tag createdTag = tagDao.upsert(tag);
+    log.info("Successfully created tag '{}'", createdTag.getName());
+    return createdTag;
   }
 
-  public boolean exists(@NonNull TagName name) throws MarquezServiceException {
-    return dao.exists(name.getValue());
+  public boolean exists(String name) {
+    return tagDao.exists(name);
   }
 
-  public List<Tag> list(int limit, int offset) throws MarquezServiceException {
+  public List<Tag> list(int limit, int offset) {
     checkArgument(limit >= 0, "limit must be >= 0");
     checkArgument(offset >= 0, "offset must be >= 0");
-    return dao.findAll(limit, offset);
+    return tagDao.findAll(limit, offset);
   }
 }

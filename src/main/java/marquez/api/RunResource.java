@@ -22,6 +22,7 @@ import marquez.common.models.RunId;
 import marquez.common.models.RunState;
 import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.RunStateInsertFragment;
 import marquez.service.models.Run;
 
 public class RunResource extends AbstractResource {
@@ -39,7 +40,7 @@ public class RunResource extends AbstractResource {
   @Path("/")
   @Produces(APPLICATION_JSON)
   public Response get() throws MarquezServiceException {
-    final Run run = serviceFactory.getRunService().get(runId).orElseThrow(() -> new RunNotFoundException(runId));
+    final Run run = serviceFactory.getRunService().get(runId.getValue()).orElseThrow(() -> new RunNotFoundException(runId));
     return Response.ok(run).build();
   }
 
@@ -89,8 +90,10 @@ public class RunResource extends AbstractResource {
 
   Response markRunAs(@NonNull RunState runState, @QueryParam("at") String atAsIso)
       throws MarquezServiceException {
+    RunStateInsertFragment fragment =
+        new RunStateInsertFragment(runId.getValue(), runState, Utils.toInstant(atAsIso));
 
-    Run run = serviceFactory.getRunStateService().markRunAs(runId, runState, Utils.toInstant(atAsIso));
+    Run run = serviceFactory.getRunStateService().markRunAs(fragment);
     return Response.ok(run).build();
   }
 }

@@ -14,93 +14,68 @@
 
 package marquez.service.models;
 
-import static java.time.temporal.ChronoUnit.MILLIS;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
-import marquez.common.models.RunId;
-import marquez.common.models.RunState;
-import marquez.db.models.DatasetVersionRow;
-import marquez.db.models.ExtendedDatasetVersionRow;
-import marquez.db.models.JobVersionRow;
-import marquez.db.models.RunArgsRow;
 
-@EqualsAndHashCode
-@ToString
 @AllArgsConstructor
+@Builder
+@Getter
+@Setter @ToString
 public final class Run {
-  @Getter private final RunId id;
-  @Getter private final Instant createdAt;
-  @Getter private final Instant updatedAt;
-  @JsonIgnore
-  @Getter
-  public JobVersionRow jobVersion;
-  @JsonIgnore
-  @Getter
-  public RunArgsRow runArgs;
+  private final UUID uuid;
+  private Instant createdAt;
+  private Instant updatedAt;
+  private Optional<Instant> nominalStartTime;
+  private Optional<Instant> nominalEndTime;
 
-  @Nullable private final Optional<Instant> nominalStartTime;
-  @Nullable private final Optional<Instant> nominalEndTime;
+  private JobVersion jobVersion;
+  private RunArgs runArgs;
+  private RunStateRecord currentState;
+  private RunStateRecord startState;
+  private RunStateRecord endState;
+  private List<DatasetVersion> inputs;
+  private List<DatasetVersion> outputs;
 
-  @JsonIgnore
-  @Getter
-  public RunStateRow currentState;
-
-  @JsonIgnore
-  @Getter
-  public RunStateRow startState;
-
-  @JsonIgnore
-  @Getter
-  public RunStateRow endState;
-
-  @JsonIgnore
-  @Getter
-  public List<DatasetVersionRow> inputs;
-
-  @JsonIgnore
-  @Getter
-  public List<ExtendedDatasetVersionRow> outputs;
-
-
-  public RunState getState() {
-    if (currentState != null) {
-      return currentState.state;
-    }
-    return null;
-  }
-  public Optional<Instant> getNominalStartTime() {
-    return nominalStartTime;
-  }
-
-  public Optional<Instant> getNominalEndTime() {
-    return nominalEndTime;
-  }
-
-  public Optional<Instant> getStartedAt() {
-    if (startState != null) {
-      return Optional.ofNullable(startState.transitionedAt);
-    }
-    return Optional.empty();
-  }
-
-  public Optional<Instant> getEndedAt() {
-    if (endState != null) {
-      return Optional.ofNullable(endState.transitionedAt);
-    }
-    return Optional.empty();
-  }
-
-  public Optional<Long> getDurationMs() {
-    return this.getEndedAt()
-        .flatMap(
-            endedAt -> getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
-  }
+//
+//  //Todo: Move json decoration to resource
+//  public RunState getState() {
+//    if (currentState != null) {
+//      return currentState.getState();
+//    }
+//    return null;
+//  }
+//  public Optional<Instant> getNominalStartTime() {
+//    return nominalStartTime;
+//  }
+//
+//  public Optional<Instant> getNominalEndTime() {
+//    return nominalEndTime;
+//  }
+//
+//  public Optional<Instant> getStartedAt() {
+//    if (startState != null) {
+//      return Optional.ofNullable(startState.getTransitionedAt());
+//    }
+//    return Optional.empty();
+//  }
+//
+//  public Optional<Instant> getEndedAt() {
+//    if (endState != null) {
+//      return Optional.ofNullable(endState.getTransitionedAt());
+//    }
+//    return Optional.empty();
+//  }
+//
+//  public Optional<Long> getDurationMs() {
+//    return this.getEndedAt()
+//        .flatMap(
+//            endedAt -> getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
+//  }
 }

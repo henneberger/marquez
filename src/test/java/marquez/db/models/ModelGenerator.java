@@ -42,8 +42,9 @@ import marquez.common.models.SourceType;
 import marquez.common.models.TagName;
 import marquez.service.models.Namespace;
 import marquez.service.models.Source;
+import marquez.service.models.SourceRow;
 import marquez.service.models.Tag;
-import marquez.service.models.Version;
+import marquez.api.Version;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}

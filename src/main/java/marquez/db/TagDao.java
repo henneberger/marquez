@@ -16,27 +16,25 @@ package marquez.db;
 
 import static org.jdbi.v3.sqlobject.customizer.BindList.EmptyHandling.NULL_STRING;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import marquez.db.mappers.TagRowMapper;
+import marquez.db.mappers.TagMapper;
+import marquez.service.input.TagUpsertFragment;
 import marquez.service.models.Tag;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.customizer.BindList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 
-@RegisterRowMapper(TagRowMapper.class)
+@RegisterRowMapper(TagMapper.class)
 public interface TagDao {
   @SqlQuery(
       "INSERT INTO tags (created_at, updated_at, name, description) "
-          + "VALUES (:createdAt, :updatedAt, :name, :description) ON CONFLICT(name)"
-          + " DO UPDATE SET updated_at = :updatedAt, name = :name, description = :description"
+          + "VALUES (:now, :now, :name, :description) ON CONFLICT(name)"
+          + " DO UPDATE SET updated_at = :now, name = :name, description = :description"
           + " RETURNING uuid, created_at, updated_at, name, description")
-  Tag upsert(@BindBean UpsertTagFragment row);
+  Tag upsert(@BindBean TagUpsertFragment row);
 
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM tags WHERE name = :name)")
   boolean exists(String name);
@@ -51,27 +49,11 @@ public interface TagDao {
   List<Tag> findAllIn(@BindList(onEmpty = NULL_STRING) UUID... rowUuids);
 
   @SqlQuery("SELECT * FROM tags WHERE name IN (<names>)")
-  List<Tag> findAllIn(@BindList(onEmpty = NULL_STRING) String... names);
+  List<Tag> findAllIn(@BindList(onEmpty = NULL_STRING) List<String> names);
 
   @SqlQuery("SELECT * FROM tags ORDER BY name LIMIT :limit OFFSET :offset")
   List<Tag> findAll(int limit, int offset);
 
   @SqlQuery("SELECT COUNT(*) FROM tags")
   int count();
-
-  @AllArgsConstructor
-  @Getter
-  public class UpsertTagFragment {
-    public Instant createdAt;
-    public Instant updatedAt;
-    public String name;
-    public Optional<String> description;
-
-    public static UpsertTagFragment build(Tag tag) {
-      return new UpsertTagFragment(tag.getCreatedAt() == null ? Instant.now() : tag.getCreatedAt(),
-          tag.getUpdatedAt() == null ? Instant.now() : tag.getUpdatedAt(),
-          tag.getName().getValue(),
-          tag.getDescription());
-    }
-  }
 }

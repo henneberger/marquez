@@ -50,11 +50,11 @@ public class OpenLineageResource extends AbstractResource {
   @Produces(APPLICATION_JSON)
   public void create(LineageEvent event, @Suspended final AsyncResponse asyncResponse) {
     serviceFactory.getLineageDao().write(event, asyncResponse);
-    CompletableFuture.supplyAsync(()->
-        serviceFactory.getLineageDao().marquezModel(event), executor).whenComplete((e, err)->{
-      if (err != null) {
-        log.error("Open lineage marquez update error", err);
-      }
-    });
+//    CompletableFuture.supplyAsync(()->
+//        serviceFactory.getLineageDao().marquezModel(event), executor).whenComplete((e, err)->{
+//      if (err != null) {
+//        log.error("Open lineage marquez update error", err);
+//      }
+//    });
   }
 }

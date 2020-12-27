@@ -16,58 +16,58 @@ package marquez.service;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import marquez.common.models.NamespaceName;
-import marquez.common.models.OwnerName;
 import marquez.db.NamespaceDao;
-import marquez.db.NamespaceDao.UpsertNamespaceFragment;
-import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.NamespaceServiceFragment;
 import marquez.service.models.Namespace;
-import marquez.service.models.NamespaceMeta;
 
 @Slf4j
 public class NamespaceService implements ServiceMetrics {
   private final NamespaceDao namespaceDao;
+  public static final String DEFAULT_NAMESPACE = "default";
+  public static final String DEFAULT_OWNER = "anonymous";
 
-  public NamespaceService(
-      @NonNull final NamespaceDao namespaceDao)
-      throws MarquezServiceException {
+  public NamespaceService(@NonNull final NamespaceDao namespaceDao){
     this.namespaceDao = namespaceDao;
     init();
   }
 
-  private void init() throws MarquezServiceException {
-    if (!exists(NamespaceName.DEFAULT)) {
-      final NamespaceMeta meta =
-          new NamespaceMeta(
-              OwnerName.ANONYMOUS,
-              "The default global namespace for dataset, job, and run metadata "
-                  + "not belonging to a user-specified namespace.");
-      createOrUpdate(NamespaceName.DEFAULT, meta);
+  private void init() {
+    if (!exists(DEFAULT_NAMESPACE)) {
+      Instant now = Instant.now();
+      NamespaceServiceFragment fragment = NamespaceServiceFragment.builder()
+          .name(DEFAULT_NAMESPACE)
+          .createdAt(now)
+          .updatedAt(now)
+          .currentOwnerName(Optional.of(DEFAULT_OWNER))
+          .description(Optional.of("The default global namespace for dataset, job, and run metadata "
+              + "not belonging to a user-specified namespace."))
+          .build();
+      createOrUpdate(fragment);
     }
   }
 
-  public Namespace createOrUpdate(@NonNull NamespaceName name, @NonNull NamespaceMeta meta)
-      throws MarquezServiceException {
-    Namespace namespace = namespaceDao.upsert(UpsertNamespaceFragment.build(name, meta));
-    log.info("Successfully created namespace '{}'  with meta: {}", name.getValue(), meta);
+  public Namespace createOrUpdate(NamespaceServiceFragment fragment) {
+    Namespace namespace = namespaceDao.upsert(fragment);
+    log.info("Successfully created namespace '{}'  with meta: {}", fragment.getName(), fragment);
     namespaces.inc();
 
     return namespace;
   }
 
-  public boolean exists(@NonNull NamespaceName name) throws MarquezServiceException {
-    return namespaceDao.exists(name.getValue());
+  public boolean exists(@NonNull String name) {
+    return namespaceDao.exists(name);
   }
 
-  public Optional<Namespace> get(@NonNull NamespaceName name) throws MarquezServiceException {
-    return namespaceDao.findBy(name.getValue());
+  public Optional<Namespace> get(@NonNull String name) {
+    return namespaceDao.findBy(name);
   }
 
-  public List<Namespace> getAll(int limit, int offset) throws MarquezServiceException {
+  public List<Namespace> getAll(int limit, int offset) {
     checkArgument(limit >= 0, "limit must be >= 0");
     checkArgument(offset >= 0, "offset must be >= 0");
     return namespaceDao.findAll(limit, offset);

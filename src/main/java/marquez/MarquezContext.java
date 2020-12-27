@@ -13,7 +13,7 @@ import marquez.api.DatasetResource;
 import marquez.api.JobResource;
 import marquez.api.NamespaceResource;
 import marquez.api.OpenLineageResource;
-import marquez.api.RunsResource;
+import marquez.api.RunListingResource;
 import marquez.api.SourceResource;
 import marquez.api.TagResource;
 import marquez.api.exceptions.JdbiExceptionExceptionMapper;
@@ -34,7 +34,7 @@ public final class MarquezContext {
   @Getter private final JobResource jobResource;
   @Getter private final TagResource tagResource;
   @Getter private final OpenLineageResource lineageResource;
-  @Getter private final RunsResource runsResource;
+  @Getter private final RunListingResource runListingResource;
 
   @Getter private final ImmutableList<Object> resources;
   @Getter private final JdbiExceptionExceptionMapper jdbiException;
@@ -61,7 +61,7 @@ public final class MarquezContext {
         new DatasetResource(serviceFactory);
     this.jobResource = new JobResource(serviceFactory);
     this.tagResource = new TagResource(serviceFactory);
-    this.runsResource = new RunsResource(serviceFactory);
+    this.runListingResource = new RunListingResource(serviceFactory);
     this.lineageResource =
         new OpenLineageResource(serviceFactory);
 
@@ -75,6 +75,6 @@ public final class MarquezContext {
             serviceExceptionMapper,
             jdbiException,
             lineageResource,
-            runsResource);
+            runListingResource);
   }
 }

@@ -17,24 +17,16 @@ package marquez.db;
 import static marquez.db.Columns.ENDED_AT;
 import static marquez.db.Columns.STARTED_AT;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
-import marquez.common.models.RunState;
-import marquez.db.mappers.DatasetVersionRowMapper;
+import marquez.db.mappers.DatasetVersionMapper;
 import marquez.db.mappers.RunMapper;
-import marquez.db.models.DatasetVersionRow;
-import marquez.db.models.ExtendedDatasetVersionRow;
-import marquez.db.models.ExtendedJobVersionRow;
+import marquez.service.input.RunInsertFragment;
+import marquez.service.input.RunStateInsertFragment;
+import marquez.service.models.DatasetVersion;
+import marquez.service.models.JobVersion;
 import marquez.service.models.Run;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
@@ -48,18 +40,18 @@ public interface RunDao extends SqlObject {
   @CreateSqlObject
   DatasetVersionDao createDatasetVersionDao();
 
-  default Run create(RunFragment runFragment) {
+  default Run create(RunInsertFragment fragment) {
     return withHandle(c->
         c.inTransaction(handle -> {
           UUID runArgsUuid = null;
-          if (runFragment.runArgs != null) {
+          if (fragment.getRunArgs() != null) {
             runArgsUuid = handle
                 .createQuery("INSERT INTO run_args (created_at, args, checksum) "
                     + "VALUES (:createdAt, :args, :checksum) ON CONFLICT(checksum) DO UPDATE SET "
                     + "args = :args RETURNING uuid")
-                .bind("createdAt", runFragment.runArgs.createdAt)
-                .bind("args", runFragment.runArgs.args)
-                .bind("checksum", runFragment.runArgs.checksum)
+                .bind("createdAt", fragment.getRunArgs().getCreatedAt())
+                .bind("args", fragment.getRunArgs().getArgs())
+                .bind("checksum", fragment.getRunArgs().getChecksum())
                 .mapTo(UUID.class)
                 .one();
           }
@@ -83,7 +75,7 @@ public interface RunDao extends SqlObject {
               + ") RETURNING uuid";
 
           UUID runUuid = handle.createQuery(runQuery)
-              .bindBean(runFragment)
+              .bindBean(fragment)
               .bind("runArgsUuid", runArgsUuid)
               .mapTo(UUID.class)
               .one();
@@ -92,7 +84,7 @@ public interface RunDao extends SqlObject {
               + "VALUES (:transitionedAt, :runUuid, :state) RETURNING uuid";
 
           UUID runStateUuid = handle.createQuery(runState)
-              .bindBean(runFragment.runState)
+              .bindBean(fragment.getRunState())
               .bind("runUuid", runUuid)
               .mapTo(UUID.class)
               .one();
@@ -113,7 +105,7 @@ public interface RunDao extends SqlObject {
         }));
   }
 
-  default Optional<Run> createState(RunStateCreateFragment fragment, Function<UUID, Optional<Run>> retriever) {
+  default Optional<Run> createState(RunStateInsertFragment fragment, Function<UUID, Optional<Run>> retriever) {
     UUID runUuid = withHandle(h -> h.inTransaction(handle-> {
       //1. Insert into run_state
       UUID runStateUuid = handle
@@ -127,7 +119,7 @@ public interface RunDao extends SqlObject {
       StringBuilder updateRun = new StringBuilder("UPDATE runs SET current_run_state = :state, "
           + "updated_at = :updatedAt");
       /*Note: there is a legacy bug of repeated RUNNING states will update the started date to the most recent*/
-      switch (fragment.state) {
+      switch (fragment.getState()) {
         case NEW:
           break;
         case RUNNING:
@@ -146,8 +138,8 @@ public interface RunDao extends SqlObject {
           .createQuery(updateRun.toString())
           .bindBean(fragment)
           .bind("currentStateUuid", runStateUuid)
-          .bind("updatedAt", fragment.transitionedAt)
-          .bind("uuid", fragment.runId)
+          .bind("updatedAt", fragment.getTransitionedAt())
+          .bind("uuid", fragment.getRunId())
           .mapTo(UUID.class)
           .one();
 
@@ -161,14 +153,7 @@ public interface RunDao extends SqlObject {
     return retriever.apply(runUuid);
   }
 
-  @AllArgsConstructor
-  @Builder
-  @Getter
-  public static class RunStateCreateFragment {
-    public UUID runId;
-    public RunState state;
-    public Instant transitionedAt;
-  }
+
   @SqlQuery("SELECT EXISTS (SELECT 1 FROM runs WHERE uuid = :rowUuid)")
   boolean exists(UUID rowUuid);
 
@@ -209,21 +194,24 @@ public interface RunDao extends SqlObject {
         return run;
       }
 
-      run.get().jobVersion = createJobVersionDao()
+      JobVersion jobVersion = createJobVersionDao()
           .findBy(run.get().getJobVersion().getUuid())
           .orElseThrow();
+      run.get().setJobVersion(jobVersion);
 
-      run.get().outputs = createDatasetVersionDao()
-          .findByRunId(run.get().getId().getValue());
+      List<DatasetVersion> outputs = createDatasetVersionDao()
+          .findByRunId(run.get().getUuid());
+      run.get().setOutputs(outputs);
 
-      run.get().inputs = handle.createQuery(
+      List<DatasetVersion> inputs = handle.createQuery(
           "SELECT dv.* "
-          + " FROM runs_input_mapping i"
-          + " INNER JOIN dataset_versions dv on i.dataset_version_uuid = dv.uuid"
-          + " WHERE i.run_uuid = :rowUuid")
+              + " FROM runs_input_mapping i"
+              + " INNER JOIN dataset_versions dv on i.dataset_version_uuid = dv.uuid"
+              + " WHERE i.run_uuid = :rowUuid")
           .bind("rowUuid", rowUuid)
-          .map(new DatasetVersionRowMapper())
+          .map(new DatasetVersionMapper())
           .list();
+      run.get().setInputs(inputs);
 
       //todo assure type safety for objects. Assure notnull-ness
 
@@ -244,43 +232,4 @@ public interface RunDao extends SqlObject {
 
   @SqlQuery("SELECT COUNT(*) FROM runs")
   int count();
-
-  @Builder
-  @AllArgsConstructor
-  @Getter
-  public static class RunFragment {
-    public UUID uuid;
-    public Instant createdAt;
-    public Instant updatedAt;
-    public JobVersionFragment jobVersion;
-    public RunArgsFragment runArgs;
-    public Optional<Instant> nominalStartTime;
-    public Optional<Instant> nominalEndTime;
-    public @NotNull RunStateFragment runState; //required
-  }
-
-  @Builder
-  @AllArgsConstructor
-  @Getter
-  public static class RunStateFragment {
-    public Instant transitionedAt;
-    public RunState state;
-  }
-
-  @Builder
-  @ToString
-  @AllArgsConstructor
-  @Getter
-  public static class RunArgsFragment {
-    @NonNull public Instant createdAt;
-    @NonNull public String args;
-    @NonNull public String checksum;
-  }
-
-  @Builder
-  @AllArgsConstructor
-  @Getter
-  public static class JobVersionFragment {
-    public UUID uuid;
-  }
 }

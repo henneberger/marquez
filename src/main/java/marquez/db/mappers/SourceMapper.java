@@ -14,33 +14,28 @@
 
 package marquez.db.mappers;
 
-import static marquez.db.Columns.stringOrNull;
-import static marquez.db.Columns.stringOrThrow;
-import static marquez.db.Columns.timestampOrThrow;
-import static marquez.db.Columns.uuidOrThrow;
-
-import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
-import marquez.common.models.SourceName;
-import marquez.common.models.SourceType;
 import marquez.db.Columns;
 import marquez.service.models.Source;
-import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 
-public final class SourceMapper implements RowMapper<Source> {
+public final class SourceMapper extends AbstractMapper<Source> {
   @Override
   public Source map(@NonNull ResultSet results, @NonNull StatementContext context)
       throws SQLException {
+    Set<String> columnNames = getColumnNames(results.getMetaData());
     return new Source(
-        uuidOrThrow(results, Columns.ROW_UUID),
-        SourceType.valueOf(stringOrThrow(results, Columns.TYPE)),
-        SourceName.of(stringOrThrow(results, Columns.NAME)),
-        timestampOrThrow(results, Columns.CREATED_AT),
-        timestampOrThrow(results, Columns.UPDATED_AT),
-        URI.create(stringOrThrow(results, Columns.CONNECTION_URL)),
-        stringOrNull(results, Columns.DESCRIPTION));
+        uuidOrThrow(results, Columns.ROW_UUID, columnNames),
+        stringOrThrow(results, Columns.TYPE, columnNames),
+        stringOrThrow(results, Columns.NAME, columnNames),
+        timestampOrThrow(results, Columns.CREATED_AT, columnNames),
+        timestampOrThrow(results, Columns.UPDATED_AT, columnNames),
+        stringOrThrow(results, Columns.CONNECTION_URL, columnNames),
+        Optional.ofNullable(stringOrNull(results, Columns.DESCRIPTION, columnNames)),
+        null);
   }
 }

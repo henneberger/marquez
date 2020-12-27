@@ -3,6 +3,7 @@ package marquez.service;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import lombok.NonNull;
+import marquez.common.models.JobType;
 import marquez.common.models.RunState;
 
 public interface ServiceMetrics {
@@ -59,12 +60,12 @@ public interface ServiceMetrics {
           .help("Total number of namespaces.")
           .register();
 
-  public static void emitVersionMetric(String namespaceName, String jobMetaType, String jobName) {
-    job_versions.labels(namespaceName, jobMetaType, jobName).inc();
+  public static void emitVersionMetric(String namespaceName, JobType jobMetaType, String jobName) {
+    job_versions.labels(namespaceName, jobMetaType.name(), jobName).inc();
   }
 
-  public static void emitJobCreationMetric(String namespaceName, String jobMetaType) {
-    jobs.labels(namespaceName, jobMetaType).inc();
+  public static void emitJobCreationMetric(String namespaceName, JobType jobMetaType) {
+    jobs.labels(namespaceName, jobMetaType.name()).inc();
   }
 
   /** Determines whether to increment or decrement run counters given {@link RunState}. */

@@ -78,7 +78,8 @@ public class TagResource extends AbstractResource {
     throwIfNotExists(namespaceName, datasetName);
     throwIfNotExists(tagName);
 
-    final Dataset dataset = serviceFactory.getDatasetService().tagWith(namespaceName, datasetName, tagName);
+    final Dataset dataset = serviceFactory.getDatasetService()
+        .tagWith(namespaceName.getValue(), datasetName.getValue(), tagName.getValue());
     return Response.ok(dataset).build();
   }
 
@@ -101,7 +102,7 @@ public class TagResource extends AbstractResource {
     throwIfNotExists(tagName);
 
     final Dataset dataset =
-        serviceFactory.getDatasetService().tagFieldWith(namespaceName, datasetName, fieldName, tagName);
+        serviceFactory.getDatasetService().tagFieldWith(namespaceName.getValue(), datasetName.getValue(), fieldName.getValue(), tagName.getValue());
     return Response.ok(dataset).build();
   }
 

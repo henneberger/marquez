@@ -20,7 +20,9 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -38,8 +40,16 @@ import marquez.common.models.DatasetName;
 import marquez.common.models.NamespaceName;
 import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.DatasetInputFragment.FieldFragment;
+import marquez.service.input.DatasetServiceFragment;
+import marquez.service.input.DatasetServiceFragment.NamespaceFragment;
+import marquez.service.input.DatasetServiceFragment.RunFragment;
+import marquez.service.input.DatasetServiceFragment.SourceFragment;
+import marquez.service.input.DatasetServiceFragment.TagFragment;
 import marquez.service.models.Dataset;
-import marquez.service.models.DatasetMeta;
+import marquez.service.models.Namespace;
+import marquez.service.models.Run;
+import marquez.service.models.Source;
 
 @Path("/api/v1/namespaces/{namespace}/datasets")
 public class DatasetResource extends AbstractResource {
@@ -59,10 +69,41 @@ public class DatasetResource extends AbstractResource {
       @PathParam("dataset") DatasetName datasetName,
       @Valid DatasetMeta datasetMeta)
       throws MarquezServiceException {
-    throwIfNotExists(namespaceName);
-    datasetMeta.getRunId().ifPresent(this::throwIfNotExists);
+    Namespace namespace = getNamespaceOrThrowIfNotFound(namespaceName);
+    Optional<Run> run = getRunOrThrowIfNotFound(datasetMeta.getRunId());
+    Source source = getSourceOrThrowIfNotFound(datasetMeta.getSourceName());
 
-    final Dataset dataset = serviceFactory.getDatasetService().createOrUpdate(namespaceName, datasetName, datasetMeta);
+    DatasetServiceFragment fragment = DatasetServiceFragment.builder()
+        .type(datasetMeta.getType().name())
+        .name(datasetName.getValue())
+        .physicalName(datasetMeta.getPhysicalName().getValue())
+        .description(datasetMeta.getDescription())
+        .source(SourceFragment.builder()
+            .uuid(source.getUuid())
+            .name(source.getName())
+            .build())
+        .fields(datasetMeta.getFields().stream().map(f->
+            FieldFragment.builder()
+              .type(f.getType().name())
+              .name(f.getName().getValue())
+              .description(f.getDescription())
+              .build()
+            ).collect(Collectors.toList()))
+        .namespace(NamespaceFragment.builder()
+            .name(namespace.getName())
+            .uuid(namespace.getUuid())
+            .build())
+        .runFragment(run.map(value -> RunFragment.builder()
+            .uuid(value.getUuid())
+            .build()))
+        .tagFragments(datasetMeta.getTags().stream().map(t->
+                TagFragment.builder().name(t.getValue()).build()
+            ).collect(Collectors.toList()))
+        .type(datasetMeta.getType().name())
+        .build();
+
+    final Dataset dataset = serviceFactory.getDatasetService()
+        .createOrUpdate(namespaceName.getValue(), datasetName.getValue(), fragment);
     return Response.ok(dataset).build();
   }
 
@@ -76,11 +117,11 @@ public class DatasetResource extends AbstractResource {
       @PathParam("namespace") NamespaceName namespaceName,
       @PathParam("dataset") DatasetName datasetName)
       throws MarquezServiceException {
-    throwIfNotExists(namespaceName);
+    Namespace namespace = getNamespaceOrThrowIfNotFound(namespaceName);
 
     final Dataset dataset =
         serviceFactory.getDatasetService()
-            .get(namespaceName, datasetName)
+            .get(namespaceName.getValue(), datasetName.getValue())
             .orElseThrow(() -> new DatasetNotFoundException(datasetName));
     return Response.ok(dataset).build();
   }
@@ -95,9 +136,10 @@ public class DatasetResource extends AbstractResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    throwIfNotExists(namespaceName);
+    Namespace namespace = getNamespaceOrThrowIfNotFound(namespaceName);
 
-    final ImmutableList<Dataset> datasets = serviceFactory.getDatasetService().getAll(namespaceName, limit, offset);
+    final List<Dataset> datasets = serviceFactory.getDatasetService()
+        .getAll(namespaceName.getValue(), limit, offset);
     return Response.ok(new Datasets(datasets)).build();
   }
 
@@ -105,6 +147,6 @@ public class DatasetResource extends AbstractResource {
   static class Datasets {
     @NonNull
     @JsonProperty("datasets")
-    ImmutableList<Dataset> value;
+    List<Dataset> value;
   }
 }

@@ -18,7 +18,6 @@ import marquez.service.TagService;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MockServiceFactory extends ServiceFactory {
-
   @Builder.Default
   private NamespaceService namespaceService = mock(NamespaceService.class);
   @Builder.Default

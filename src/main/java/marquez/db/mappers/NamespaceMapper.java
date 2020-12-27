@@ -14,43 +14,27 @@
 
 package marquez.db.mappers;
 
-import static marquez.db.Columns.stringOrNull;
-import static marquez.db.Columns.stringOrThrow;
-import static marquez.db.Columns.timestampOrThrow;
-import static marquez.db.Columns.uuidOrNull;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
-import marquez.common.models.NamespaceName;
-import marquez.common.models.OwnerName;
 import marquez.db.Columns;
 import marquez.service.models.Namespace;
-import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 
-public final class NamespaceMapper implements RowMapper<Namespace> {
+public final class NamespaceMapper extends AbstractMapper<Namespace> {
   @Override
   public Namespace map(@NonNull ResultSet results, @NonNull StatementContext context)
       throws SQLException {
-    //Ownername can be null and should be updated within the same transaction
-    String ownerName = stringOrNull(results, Columns.CURRENT_OWNER_NAME);
-    if (ownerName == null) {
+    Set<String> columnNames = getColumnNames(results.getMetaData());
       return new Namespace(
-          uuidOrNull(results, Columns.ROW_UUID),
-          NamespaceName.of(stringOrThrow(results, Columns.NAME)),
-          timestampOrThrow(results, Columns.CREATED_AT),
-          timestampOrThrow(results, Columns.UPDATED_AT),
-          stringOrNull(results, Columns.DESCRIPTION));
-    } else {
-      return new Namespace(
-          uuidOrNull(results, Columns.ROW_UUID),
-          NamespaceName.of(stringOrThrow(results, Columns.NAME)),
-          timestampOrThrow(results, Columns.CREATED_AT),
-          timestampOrThrow(results, Columns.UPDATED_AT),
-          stringOrNull(results, Columns.CURRENT_OWNER_NAME) == null ? null :
-              OwnerName.of(stringOrNull(results, Columns.CURRENT_OWNER_NAME)),
-          stringOrNull(results, Columns.DESCRIPTION), null);
-    }
+          uuidOrNull(results, Columns.ROW_UUID, columnNames),
+          stringOrThrow(results, Columns.NAME, columnNames),
+          timestampOrThrow(results, Columns.CREATED_AT, columnNames),
+          timestampOrThrow(results, Columns.UPDATED_AT, columnNames),
+          Optional.ofNullable(stringOrNull(results, Columns.DESCRIPTION, columnNames)),
+          null,
+          toOwnerLink(stringOrNull(results, Columns.CURRENT_OWNER_NAME, columnNames)));
   }
 }

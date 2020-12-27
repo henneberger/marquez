@@ -64,6 +64,4 @@ public final class NamespaceName {
       return name.getValue();
     }
   }
-
-  public static final NamespaceName DEFAULT = NamespaceName.of("default");
 }

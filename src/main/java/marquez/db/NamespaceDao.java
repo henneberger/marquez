@@ -18,13 +18,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import marquez.common.models.NamespaceName;
-import marquez.common.models.OwnerName;
 import marquez.db.mappers.NamespaceMapper;
+import marquez.service.input.NamespaceServiceFragment;
 import marquez.service.models.Namespace;
-import marquez.service.models.NamespaceMeta;
+import marquez.service.models.Owner;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -32,7 +29,7 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 @RegisterRowMapper(NamespaceMapper.class)
 public interface NamespaceDao extends SqlObject {
-  default Namespace upsert(UpsertNamespaceFragment fragment) {
+  default Namespace upsert(NamespaceServiceFragment fragment) {
     return withHandle(
         h -> h.inTransaction(handle -> {
           String upsert =
@@ -46,7 +43,7 @@ public interface NamespaceDao extends SqlObject {
               .map(new NamespaceMapper())
               .one();
 
-          if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getOwnerName())) {
+          if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getCurrentOwner().getName())) {
             if (fragment.getCurrentOwnerName().isPresent()) {
               String ownerUpsert =
                   "INSERT INTO owners (created_at, name) " + "VALUES (:createdAt, :name) "
@@ -79,21 +76,21 @@ public interface NamespaceDao extends SqlObject {
                 .bind("uuid", namespace.getUuid())
                 .execute();
 
-            namespace.setOwnerName(OwnerName.of(fragment.getCurrentOwnerName().orElse(null)));
+            namespace.setCurrentOwner(Owner.builder().name(fragment.getCurrentOwnerName().orElse(null)).build());
           }
 
           return namespace;
         }));
   }
 
-  default boolean isChangeOwnership(Optional<String> fragment, OwnerName namespace) {
+  default boolean isChangeOwnership(Optional<String> fragment, String namespace) {
     if (fragment == null) {
       return false;
     }
     if (fragment.isEmpty() && namespace != null) {
       return true;
     }
-    if (fragment.isPresent() && (namespace == null || !namespace.getValue().equals(fragment.get()))) {
+    if (fragment.isPresent() && (namespace == null || !namespace.equals(fragment.get()))) {
       return true;
     }
     return false;
@@ -120,32 +117,4 @@ public interface NamespaceDao extends SqlObject {
 
   @SqlQuery("SELECT COUNT(*) FROM namespaces")
   int count();
-
-  @AllArgsConstructor
-  @Getter
-  public class UpsertNamespaceFragment {
-    public Instant createdAt;
-    public Instant updatedAt;
-    public String name;
-    public Optional<String> description;
-    public Optional<String> currentOwnerName;
-
-    public static UpsertNamespaceFragment build(NamespaceName name, NamespaceMeta meta) {
-      return new UpsertNamespaceFragment(Instant.now(), Instant.now(),
-          name.getValue(),
-          meta.getDescription(),
-          Optional.ofNullable(meta.getOwnerName().getValue()));
-    }
-
-    public static UpsertNamespaceFragment build(String namespace) {
-      return new UpsertNamespaceFragment(Instant.now(), Instant.now(),
-          namespace, null, null);
-    }
-
-    public static UpsertNamespaceFragment build(Namespace namespaceRow) {
-      return new UpsertNamespaceFragment(namespaceRow.getCreatedAt(), namespaceRow.getUpdatedAt(),
-          namespaceRow.getName().getValue(), namespaceRow.getDescription(),
-          Optional.of(namespaceRow.getOwnerName().getValue()));
-    }
-  }
 }

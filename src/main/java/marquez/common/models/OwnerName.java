@@ -53,5 +53,4 @@ public final class OwnerName {
     }
   }
 
-  public static final OwnerName ANONYMOUS = OwnerName.of("anonymous");
 }

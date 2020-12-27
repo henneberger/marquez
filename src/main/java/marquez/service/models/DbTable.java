@@ -14,45 +14,23 @@
 
 package marquez.service.models;
 
-import static marquez.common.models.DatasetType.DB_TABLE;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.time.Instant;
-import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import marquez.common.models.DatasetId;
-import marquez.common.models.DatasetName;
-import marquez.common.models.Field;
-import marquez.common.models.SourceName;
-import marquez.common.models.TagName;
 
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public final class DbTable extends Dataset {
-  public DbTable(
-      final DatasetId id,
-      final DatasetName name,
-      final DatasetName physicalName,
-      final Instant createdAt,
-      final Instant updatedAt,
-      final SourceName sourceName,
-      @Nullable final ImmutableList<Field> fields,
-      @Nullable final ImmutableSet<TagName> tags,
-      @Nullable final Instant lastModifiedAt,
-      @Nullable final String description) {
-    super(
-        id,
-        DB_TABLE,
-        name,
-        physicalName,
-        createdAt,
-        updatedAt,
-        sourceName,
-        fields,
-        tags,
-        lastModifiedAt,
-        description);
+  public DbTable(UUID uuid, String type, String name, String physicalName,
+      Instant createdAt, Instant updatedAt, Optional<Instant> lastModifiedAt,
+      Optional<String> description, Source source,
+      List<DatasetField> fields, List<JobVersion> jobVersionAsInput,
+      List<JobVersion> jobVersionAsOutput, Namespace namespace,
+      List<Tag> tags, DatasetVersion currentVersion) {
+    super(uuid, type, name, physicalName, createdAt, updatedAt, lastModifiedAt, description, source,
+        fields, jobVersionAsInput, jobVersionAsOutput, namespace, tags, currentVersion);
   }
 }

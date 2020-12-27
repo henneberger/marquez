@@ -43,6 +43,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import marquez.Generator;
+import marquez.api.DbTableMeta;
+import marquez.api.JobMeta;
+import marquez.api.NamespaceMeta;
+import marquez.api.RunMeta;
+import marquez.api.Version;
 import marquez.common.Utils;
 import marquez.common.models.DatasetId;
 import marquez.common.models.DatasetName;
@@ -181,10 +186,10 @@ public final class ModelGenerator extends Generator {
         now,
         now,
         null,
-        RunArgsRow.builder().args(newRunArgs()).build(),
+        RunArgs.builder().args(newRunArgs()).build(),
         runMeta.getNominalStartTime(),
         runMeta.getNominalEndTime(),
-        RunStateRow.builder().state(runState).build(),
+        RunStateRecord.builder().state(runState).build(),
         null,
         null,
         null,

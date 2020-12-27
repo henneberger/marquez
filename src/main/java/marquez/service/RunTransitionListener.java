@@ -11,7 +11,7 @@ import marquez.common.models.DatasetVersionId;
 import marquez.common.models.JobVersionId;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
-import marquez.service.models.RunMeta;
+import marquez.api.RunMeta;
 
 /**
  * To get notified of run transition events Every run should have at least one JobInputUpdate and

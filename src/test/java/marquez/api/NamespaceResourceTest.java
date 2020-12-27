@@ -20,7 +20,6 @@ import marquez.common.models.NamespaceName;
 import marquez.service.NamespaceService;
 import marquez.service.exceptions.MarquezServiceException;
 import marquez.service.models.Namespace;
-import marquez.service.models.NamespaceMeta;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

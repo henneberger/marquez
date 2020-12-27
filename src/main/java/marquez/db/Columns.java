@@ -14,15 +14,6 @@
 
 package marquez.db;
 
-import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import org.postgresql.util.PGInterval;
-
 public final class Columns {
   private Columns() {}
 
@@ -102,89 +93,4 @@ public final class Columns {
   public static final String TRANSITIONED_AT = "transitioned_at";
   public static final String RUN_UUID = "run_uuid";
   public static final String STATE = "state";
-
-  public static UUID uuidOrNull(final ResultSet results, final String column) throws SQLException {
-    if (results.getObject(column) == null) {
-      return null;
-    }
-    return results.getObject(column, UUID.class);
-  }
-
-  public static UUID uuidOrThrow(final ResultSet results, final String column) throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return results.getObject(column, UUID.class);
-  }
-
-  public static Instant timestampOrNull(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      return null;
-    }
-    return results.getTimestamp(column).toInstant();
-  }
-
-  public static Instant timestampOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return results.getTimestamp(column).toInstant();
-  }
-
-  public static String stringOrNull(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      return null;
-    }
-    return results.getString(column);
-  }
-
-  public static String stringOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return results.getString(column);
-  }
-
-  public static int intOrThrow(final ResultSet results, final String column) throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return results.getInt(column);
-  }
-
-  public static PGInterval pgIntervalOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return new PGInterval(results.getString(column));
-  }
-
-  public static BigDecimal bigDecimalOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return results.getBigDecimal(column);
-  }
-
-  public static List<UUID> uuidArrayOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return Arrays.asList((UUID[]) results.getArray(column).getArray());
-  }
-
-  public static List<String> stringArrayOrThrow(final ResultSet results, final String column)
-      throws SQLException {
-    if (results.getObject(column) == null) {
-      throw new IllegalArgumentException();
-    }
-    return Arrays.asList((String[]) results.getArray(column).getArray());
-  }
 }

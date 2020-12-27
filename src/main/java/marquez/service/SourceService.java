@@ -18,31 +18,26 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.List;
 import java.util.Optional;
-import lombok.NonNull;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import marquez.common.models.SourceName;
 import marquez.db.SourceDao;
+import marquez.service.input.SourceUpsertFragment;
 import marquez.service.models.Source;
-import marquez.service.models.SourceMeta;
 
 @Slf4j
+@AllArgsConstructor
 public class SourceService implements ServiceMetrics {
-
   private final SourceDao sourceDao;
 
-  public SourceService(@NonNull final SourceDao sourceDao) {
-    this.sourceDao = sourceDao;
-  }
-
-  public Source createOrUpdate(@NonNull SourceName name, @NonNull SourceMeta meta) {
-    Source source = sourceDao.upsert(SourceDao.InputFragment.build(name, meta));
-    log.info("Successfully created source '{}' with meta: {}", name.getValue(), meta);
+  public Source createOrUpdate(SourceUpsertFragment fragment) {
+    Source source = sourceDao.upsert(fragment);
+    log.info("Successfully created source '{}' with meta: {}", fragment.getName(), fragment);
     sources.inc();
     return source;
   }
 
-  public Optional<Source> get(@NonNull SourceName name) {
-    return sourceDao.findBy(name.getValue());
+  public Optional<Source> get(String name) {
+    return sourceDao.findBy(name);
   }
 
   public List<Source> list(int limit, int offset) {

@@ -20,6 +20,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
 import java.util.List;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -37,8 +38,8 @@ import marquez.api.exceptions.SourceNotFoundException;
 import marquez.common.models.SourceName;
 import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.SourceUpsertFragment;
 import marquez.service.models.Source;
-import marquez.service.models.SourceMeta;
 
 @Path("/api/v1/sources")
 public class SourceResource extends AbstractResource {
@@ -55,7 +56,17 @@ public class SourceResource extends AbstractResource {
   @Produces(APPLICATION_JSON)
   public Response createOrUpdate(@PathParam("source") SourceName name, @Valid SourceMeta meta)
       throws MarquezServiceException {
-    final Source source = serviceFactory.getSourceService().createOrUpdate(name, meta);
+    Instant now = Instant.now();
+    SourceUpsertFragment sourceUpsertFragment = SourceUpsertFragment.builder()
+        .type(meta.getType())
+        .name(name.getValue())
+        .createdAt(now)
+        .updatedAt(now)
+        .connectionUrl(meta.getConnectionUrl().toASCIIString())
+        .description(meta.getDescription())
+        .build();
+
+    final Source source = serviceFactory.getSourceService().createOrUpdate(sourceUpsertFragment);
     return Response.ok(source).build();
   }
 
@@ -66,7 +77,7 @@ public class SourceResource extends AbstractResource {
   @Path("{source}")
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("source") SourceName name) throws MarquezServiceException {
-    final Source source = serviceFactory.getSourceService().get(name).orElseThrow(() -> new SourceNotFoundException(name));
+    final Source source = serviceFactory.getSourceService().get(name.getValue()).orElseThrow(() -> new SourceNotFoundException(name));
     return Response.ok(source).build();
   }
 

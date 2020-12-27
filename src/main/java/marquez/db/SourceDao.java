@@ -14,16 +14,11 @@
 
 package marquez.db;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import lombok.NonNull;
-import marquez.common.models.SourceName;
 import marquez.db.mappers.SourceMapper;
-import marquez.db.models.SourceRow;
-import marquez.service.mappers.Mapper;
+import marquez.service.input.SourceUpsertFragment;
 import marquez.service.models.Source;
-import marquez.service.models.SourceMeta;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -31,7 +26,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 @RegisterRowMapper(SourceMapper.class)
 public interface SourceDao extends SqlObject {
 
-  default Source upsert(SourceRow sourceRow) {
+  default Source upsert(SourceUpsertFragment fragment) {
     return withHandle(
         handle -> {
           StringBuilder upsert = new StringBuilder(
@@ -54,15 +49,18 @@ public interface SourceDao extends SqlObject {
                   + ", updated_at = :updatedAt"
                   + ", name = :name"
                   + ", connection_url = :connectionUrl ");
-          if (sourceRow.getDescription() != null) {
+          if (fragment.getDescription() != null) {
             upsert.append(", description = :description ");
           }
           upsert.append(" RETURNING uuid, type, created_at, updated_at, name, connection_url, description");
           return handle
               .createQuery(upsert.toString())
-              .bind("createdAt", Instant.now())
-              .bind("updatedAt", Instant.now())
-              .bindBean(sourceRow)
+              .bind("createdAt", fragment.getCreatedAt())
+              .bind("updatedAt", fragment.getUpdatedAt())
+              .bind("type", fragment.getType().name())
+              .bind("name", fragment.getName())
+              .bind("connectionUrl", fragment.getConnectionUrl())
+              .bind("description", fragment.getDescription().orElse(null))
               .map(new SourceMapper())
               .one();
         });
@@ -76,18 +74,4 @@ public interface SourceDao extends SqlObject {
 
   @SqlQuery("SELECT COUNT(*) FROM sources")
   int count();
-
-  public static class InputFragment {
-    public static SourceRow build(
-        @NonNull final SourceName name, @NonNull final SourceMeta meta) {
-      final Instant now = Mapper.newTimestamp();
-      return new SourceRow(
-          meta.getType().toString(),
-          now,
-          now,
-          name.getValue(),
-          meta.getConnectionUrl().toASCIIString(),
-          meta.getDescription().orElse(null));
-    }
-  }
 }

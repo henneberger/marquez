@@ -14,31 +14,27 @@
 
 package marquez.db.mappers;
 
-import static marquez.db.Columns.stringOrThrow;
-import static marquez.db.Columns.timestampOrThrow;
-import static marquez.db.Columns.uuidArrayOrThrow;
-import static marquez.db.Columns.uuidOrNull;
-import static marquez.db.Columns.uuidOrThrow;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 import lombok.NonNull;
 import marquez.db.Columns;
-import marquez.db.models.StreamVersionRow;
-import org.jdbi.v3.core.mapper.RowMapper;
+import marquez.service.models.StreamVersion;
 import org.jdbi.v3.core.statement.StatementContext;
 
-public final class StreamVersionRowMapper implements RowMapper<StreamVersionRow> {
+public final class StreamVersionRowMapper extends AbstractMapper<StreamVersion> {
   @Override
-  public StreamVersionRow map(@NonNull ResultSet results, @NonNull StatementContext context)
+  public StreamVersion map(@NonNull ResultSet results, @NonNull StatementContext context)
       throws SQLException {
-    return new StreamVersionRow(
-        uuidOrThrow(results, Columns.ROW_UUID),
-        timestampOrThrow(results, Columns.CREATED_AT),
-        uuidOrThrow(results, Columns.DATASET_UUID),
-        uuidOrThrow(results, Columns.VERSION),
-        uuidArrayOrThrow(results, Columns.FIELD_UUIDS),
-        uuidOrNull(results, Columns.RUN_UUID),
-        stringOrThrow(results, Columns.SCHEMA_LOCATION));
+    Set<String> columnNames = getColumnNames(results.getMetaData());
+    return new StreamVersion(
+        uuidOrThrow(results, Columns.ROW_UUID, columnNames),
+        timestampOrThrow(results, Columns.CREATED_AT, columnNames),
+        toDatasetLink(uuidOrThrow(results, Columns.DATASET_UUID, columnNames)),
+        uuidOrThrow(results, Columns.VERSION, columnNames),
+        toDatasetFieldsLink(uuidArrayOrThrow(results, Columns.FIELD_UUIDS, columnNames)),
+        toRunLink(uuidOrNull(results, Columns.RUN_UUID, columnNames)),
+        null,
+        stringOrThrow(results, Columns.SCHEMA_LOCATION, columnNames));
   }
 }

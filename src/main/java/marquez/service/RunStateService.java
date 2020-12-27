@@ -1,27 +1,27 @@
 package marquez.service;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import marquez.api.RunMeta;
+import marquez.common.models.DatasetName;
 import marquez.common.models.DatasetVersionId;
+import marquez.common.models.JobName;
 import marquez.common.models.JobVersionId;
+import marquez.common.models.NamespaceName;
 import marquez.common.models.RunId;
 import marquez.common.models.RunState;
-import marquez.db.JobVersionDao;
 import marquez.db.RunDao;
 import marquez.service.RunTransitionListener.JobInputUpdate;
 import marquez.service.RunTransitionListener.JobOutputUpdate;
 import marquez.service.RunTransitionListener.RunInput;
 import marquez.service.RunTransitionListener.RunOutput;
 import marquez.service.RunTransitionListener.RunTransition;
-import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.RunStateInsertFragment;
 import marquez.service.models.Run;
-import marquez.service.models.RunMeta;
 
 @Slf4j
 @AllArgsConstructor
@@ -29,17 +29,12 @@ public class RunStateService {
   private final RunDao runDao;
   private final List<RunTransitionListener> runTransitionListeners;
 
-  public Run markRunAs(@NonNull RunId runId, @NonNull RunState state, @NonNull Instant transitionedAt /*moved to not null*/)throws MarquezServiceException {
-    log.debug("Marking run with ID '{}' as '{}'...", runId, state);
-    Optional<Run> oldRun = runDao.findBy(runId.getValue());
+  public Run markRunAs(RunStateInsertFragment fragment) {
+    log.debug("Marking run with ID '{}' as '{}'...", fragment.getRunId(), fragment.getState());
+    Optional<Run> oldRun = runDao.findBy(fragment.getRunId());
 
-    Run run = runDao.createState(RunDao.RunStateCreateFragment.builder()
-        .runId(runId.getValue())
-        .state(state)
-        .transitionedAt(transitionedAt)
-        .build(), runDao::findByWithDatasets)
-        .get();
-    notify(run, state, oldRun);
+    Run run = runDao.createState(fragment, runDao::findByWithDatasets).get();
+    notify(run, fragment.getState(), oldRun);
     return run;
   }
 
@@ -56,42 +51,47 @@ public class RunStateService {
         notifyComplete(run);
         break;
     }
-    notify(new RunTransition(run.getId(),
-        oldRun.map(Run::getState).orElse(null),
-        run.getCurrentState().state
+    notify(new RunTransition(RunId.of(run.getUuid()),
+        oldRun.map(r->r.getCurrentState().getState()).orElse(null),
+        run.getCurrentState().getState()
     ));
   }
 
   private void notifyRunning(Run run) {
-    notify(new JobInputUpdate(run.getId(),
-        RunMeta.builder()
-          .id(run.getId())
-          .args(run.getRunArgs().getArgs())
-          .nominalStartTime(run.getNominalStartTime().orElse(null))
-          .nominalEndTime(run.getNominalEndTime().orElse(null))
-        .build(), JobVersionId.builder()
+    RunMeta runMeta = RunMeta.builder()
+            .id(RunId.of(run.getUuid()))
+            .args(run.getRunArgs().getArgs())
+            .nominalStartTime(run.getNominalStartTime().orElse(null))
+            .nominalEndTime(run.getNominalEndTime().orElse(null))
+            .build();
+    JobVersionId jobVersionId = JobVersionId.builder()
             .versionUuid(run.getJobVersion().getUuid())
-            .namespace(run.jobVersion.job.getNamespace())
-            .name(run.jobVersion.job.getName())
-        .build(), toRunInputs(run)));
+            .namespace(NamespaceName.of(run.getJobVersion().getJob().getNamespace().getName()))
+            .name(JobName.of(run.getJobVersion().getJob().getName()))
+            .build();
+    List<RunInput> runInputs = toRunInputs(run);
+
+    notify(new JobInputUpdate(RunId.of(run.getUuid()), runMeta, jobVersionId, runInputs));
   }
 
   private List<RunInput> toRunInputs(Run run) {
-    return run.inputs.stream()
+    return run.getInputs().stream()
         .map(d-> new RunInput(DatasetVersionId.builder()
           .versionUuid(d.getUuid())
-          .namespace(d.dataset.getNamespace())
-          .name(d.dataset.getName())
+          .namespace(NamespaceName.of(d.getDataset().getNamespace().getName()))
+          .name(DatasetName.of(d.getDataset().getName()))
           .build()))
         .collect(Collectors.toList());
   }
 
   private void notifyComplete(Run run) {
-    notify(new JobOutputUpdate(run.getId(), JobVersionId.builder()
+    JobVersionId jobVersionId = JobVersionId.builder()
         .versionUuid(run.getJobVersion().getUuid())
-        .namespace(run.jobVersion.job.namespace_.getName())
-        .name(run.jobVersion.job.getName())
-        .build(), toRunOutputs(run)));
+        .namespace(NamespaceName.of(run.getJobVersion().getJob().getNamespace().getName()))
+        .name(JobName.of(run.getJobVersion().getJob().getName()))
+        .build();
+    List<RunOutput> runOutputs = toRunOutputs(run);
+    notify(new JobOutputUpdate(RunId.of(run.getUuid()), jobVersionId, runOutputs));
   }
 
   private List<RunOutput> toRunOutputs(Run run) {
@@ -99,8 +99,8 @@ public class RunStateService {
         .map(d -> new RunOutput(
             DatasetVersionId.builder()
                 .versionUuid(d.getUuid())
-                .namespace(d.dataset.getNamespace())
-                .name(d.dataset.getName())
+                .namespace(NamespaceName.of(d.getDataset().getNamespace().getName()))
+                .name(DatasetName.of(d.getDataset().getName()))
                 .build()))
         .collect(Collectors.toList());
   }

@@ -21,7 +21,12 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.ws.rs.Consumes;
@@ -36,16 +41,18 @@ import javax.ws.rs.core.Response;
 import lombok.NonNull;
 import lombok.Value;
 import marquez.api.exceptions.JobNotFoundException;
+import marquez.common.models.DatasetId;
 import marquez.common.models.JobName;
 import marquez.common.models.NamespaceName;
+import marquez.common.models.RunId;
 import marquez.service.ServiceFactory;
 import marquez.service.exceptions.MarquezServiceException;
+import marquez.service.input.JobServiceFragment;
+import marquez.service.input.JobServiceFragment.DatasetFragment;
 import marquez.service.models.Job;
-import marquez.service.models.JobMeta;
 
 @Path("/api/v1")
 public class JobResource extends AbstractResource {
-
   public JobResource(ServiceFactory serviceFactory) {
     super(serviceFactory);
   }
@@ -64,10 +71,43 @@ public class JobResource extends AbstractResource {
       throws MarquezServiceException {
     throwIfNotExists(namespaceName);
     jobMeta.getRunId().ifPresent(this::throwIfNotExists);
+    //validate inputs and outputs in job meta
 
+    JobServiceFragment fragment = JobServiceFragment.builder()
+        .namespace(namespaceName.getValue())
+        .jobName(jobName.getValue())
+        .type(jobMeta.getType())
+        .inputs(toDatasetFragment(jobMeta.getInputs()))
+        .outputs(toDatasetFragment(jobMeta.getOutputs()))
+        .location(jobMeta.getLocation().isPresent() ? jobMeta.getLocation().get().toString() : null)
+        .context(jobMeta.getContext())
+        .runId(unboxOptional(jobMeta.getRunId()))
+        .description(jobMeta.getDescription())
+      .build();
     final Job job = serviceFactory.getJobService()
-        .createOrUpdate(namespaceName, jobName, jobMeta);
+        .createOrUpdate(namespaceName.getValue(), jobName.getValue(), fragment);
     return Response.ok(job).build();
+  }
+
+  public static Set<DatasetFragment> toDatasetFragment(Set<DatasetId> datasets) {
+    if (datasets.isEmpty()) {
+      return ImmutableSet.of();
+    }
+    return datasets.stream()
+          .map(ds ->
+              DatasetFragment.builder()
+              .datasetName(ds.getName().getValue())
+              .namespace(ds.getNamespace().getValue())
+              .build()
+          )
+        .collect(Collectors.toSet());
+  }
+
+  private Optional<UUID> unboxOptional(Optional<RunId> runId) {
+    if (runId == null || runId.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(runId.get().getValue());
   }
 
   @Timed
@@ -83,7 +123,7 @@ public class JobResource extends AbstractResource {
 
     final Job job =
         serviceFactory.getJobService()
-            .get(namespaceName, jobName).orElseThrow(() -> new JobNotFoundException(jobName));
+            .get(namespaceName.getValue(), jobName.getValue()).orElseThrow(() -> new JobNotFoundException(jobName));
     return Response.ok(job).build();
   }
 
@@ -100,8 +140,8 @@ public class JobResource extends AbstractResource {
       throws MarquezServiceException {
     throwIfNotExists(namespaceName);
 
-    final ImmutableList<Job> jobs = serviceFactory.getJobService()
-        .getAll(namespaceName, limit, offset);
+    final List<Job> jobs = serviceFactory.getJobService()
+        .getAll(namespaceName.getValue(), limit, offset);
     return Response.ok(new Jobs(jobs)).build();
   }
 
@@ -109,6 +149,6 @@ public class JobResource extends AbstractResource {
   static class Jobs {
     @NonNull
     @JsonProperty("jobs")
-    ImmutableList<Job> value;
+    List<Job> value;
   }
 }

@@ -14,52 +14,28 @@
 
 package marquez.service.models;
 
-import static marquez.common.models.DatasetType.STREAM;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.net.URL;
 import java.time.Instant;
-import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
-import marquez.common.models.DatasetId;
-import marquez.common.models.DatasetName;
-import marquez.common.models.Field;
-import marquez.common.models.SourceName;
-import marquez.common.models.TagName;
 
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Getter
 public final class Stream extends Dataset {
-  @Getter private final URL schemaLocation;
+  private final String schemaLocation;
 
-  public Stream(
-      final DatasetId id,
-      final DatasetName name,
-      final DatasetName physicalName,
-      final Instant createdAt,
-      final Instant updatedAt,
-      final SourceName sourceName,
-      @NonNull final URL schemaLocation,
-      @Nullable final ImmutableList<Field> fields,
-      @Nullable final ImmutableSet<TagName> tags,
-      @Nullable final Instant lastModifiedAt,
-      @Nullable final String description) {
-    super(
-        id,
-        STREAM,
-        name,
-        physicalName,
-        createdAt,
-        updatedAt,
-        sourceName,
-        fields,
-        tags,
-        lastModifiedAt,
-        description);
+  public Stream(UUID uuid, String type, String name, String physicalName,
+      Instant createdAt, Instant updatedAt, Optional<Instant> lastModifiedAt,
+      Optional<String> description, Source source,
+      List<DatasetField> fields, List<JobVersion> jobVersionAsInput,
+      List<JobVersion> jobVersionAsOutput, Namespace namespace,
+      List<Tag> tags, DatasetVersion currentVersion, String schemaLocation) {
+    super(uuid, type, name, physicalName, createdAt, updatedAt, lastModifiedAt, description, source,
+        fields, jobVersionAsInput, jobVersionAsOutput, namespace, tags, currentVersion);
     this.schemaLocation = schemaLocation;
   }
 }

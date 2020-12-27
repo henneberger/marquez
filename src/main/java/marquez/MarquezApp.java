@@ -40,7 +40,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import marquez.db.DbMigration;
 import marquez.db.FlywayFactory;
-import marquez.exceptions.MarquezException;
 import org.flywaydb.core.api.FlywayException;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.postgres.PostgresPlugin;
@@ -83,7 +82,7 @@ public final class MarquezApp extends Application<MarquezConfig> {
   }
 
   @Override
-  public void run(@NonNull MarquezConfig config, @NonNull Environment env) throws MarquezException {
+  public void run(@NonNull MarquezConfig config, @NonNull Environment env) {
     final DataSourceFactory sourceFactory = config.getDataSourceFactory();
     final DataSource source = sourceFactory.build(env.metrics(), DB_SOURCE_NAME);
 

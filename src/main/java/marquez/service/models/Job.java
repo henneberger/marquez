@@ -36,7 +36,6 @@ public final class Job {
   private String name;
   private Instant createdAt;
   private Instant updatedAt;
-  private Optional<URL> location;
   private Optional<String> description;
   public List<JobVersion> versions;
   public Namespace namespace;

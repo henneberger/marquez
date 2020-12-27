@@ -14,13 +14,13 @@
 
 package marquez.service.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+@Getter
 @AllArgsConstructor
 @Builder
 public class JobContext {

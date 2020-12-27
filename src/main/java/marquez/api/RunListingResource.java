@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -72,7 +73,7 @@ public class RunListingResource extends AbstractResource {
 
     final Run run = serviceFactory.getRunService().createRun(namespaceName.getValue(), jobName.getValue(), fragment);
     final URI runLocation = locationFor(uriInfo, run);
-    return Response.created(runLocation).entity(run).build();
+    return Response.created(runLocation).entity(new RunResponse(run)).build();
   }
 
   @Timed
@@ -90,7 +91,10 @@ public class RunListingResource extends AbstractResource {
     throwIfNotExists(namespaceName);
     throwIfNotExists(namespaceName, jobName);
 
-    final List<Run> runs = serviceFactory.getRunService().getAllRunsFor(namespaceName.getValue(), jobName.getValue(), limit, offset);
+    final List<RunResponse> runs = serviceFactory.getRunService()
+        .getAllRunsFor(namespaceName.getValue(), jobName.getValue(), limit, offset)
+        .stream().map(run->new RunResponse(run))
+        .collect(Collectors.toList());
     return Response.ok(new Runs(runs)).build();
   }
 
@@ -105,6 +109,6 @@ public class RunListingResource extends AbstractResource {
   static class Runs {
     @NonNull
     @JsonProperty("runs")
-    List<Run> value;
+    List<RunResponse> value;
   }
 }

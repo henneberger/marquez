@@ -103,6 +103,9 @@ public abstract class AbstractMapper<T> implements RowMapper<T> {
   }
 
   protected List<DatasetField> toDatasetFieldsLink(List<UUID> fields) {
+    if (fields == null) {
+      return null;
+    }
     return fields.stream()
         .map(f->DatasetField.builder()
             .uuid(f)
@@ -224,6 +227,14 @@ public abstract class AbstractMapper<T> implements RowMapper<T> {
       throws SQLException {
     if (!columnNames.contains(column) || results.getObject(column) == null) {
       throw new IllegalArgumentException();
+    }
+    return Arrays.asList((UUID[]) results.getArray(column).getArray());
+  }
+
+  public static List<UUID> uuidArrayOrNull(final ResultSet results, final String column, Set<String> columnNames)
+      throws SQLException {
+    if (!columnNames.contains(column) || results.getObject(column) == null) {
+      return null;
     }
     return Arrays.asList((UUID[]) results.getArray(column).getArray());
   }

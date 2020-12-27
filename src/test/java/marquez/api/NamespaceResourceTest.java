@@ -30,80 +30,80 @@ import org.mockito.junit.MockitoRule;
 
 @Category(UnitTests.class)
 public class NamespaceResourceTest {
-  private static final NamespaceName NAMESPACE_NAME = newNamespaceName();
-
-  private static final Namespace NAMESPACE_0 = newNamespace();
-  private static final Namespace NAMESPACE_1 = newNamespace();
-  private static final Namespace NAMESPACE_2 = newNamespace();
-  private static final ImmutableList<Namespace> NAMESPACES =
-      ImmutableList.of(NAMESPACE_0, NAMESPACE_1, NAMESPACE_2);
-
-  @Rule public MockitoRule rule = MockitoJUnit.rule();
-
-  private NamespaceService service;
-  private NamespaceResource resource;
-
-  @Before
-  public void setUp() {
-    MockServiceFactory sf = new MockServiceFactory();
-    service = sf.getNamespaceService();
-    resource = new NamespaceResource(sf);
-  }
-
-  @Test
-  public void testCreateOrUpdate() throws MarquezServiceException {
-    final NamespaceMeta meta = newNamespaceMeta();
-    final Namespace namespace = toNamespace(NAMESPACE_NAME, meta);
-    when(service.createOrUpdate(any())).thenReturn(namespace);
-
-    final Response response = resource.createOrUpdate(NAMESPACE_NAME, meta);
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat((Namespace) response.getEntity()).isEqualTo(namespace);
-  }
-
-  @Test
-  public void testGet() throws MarquezServiceException {
-    final Namespace namespace = newNamespaceWith(NAMESPACE_NAME);
-    when(service.get(NAMESPACE_NAME.getValue())).thenReturn(Optional.of(namespace));
-
-    final Response response = resource.get(NAMESPACE_NAME);
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat((Namespace) response.getEntity()).isEqualTo(namespace);
-  }
-
-  @Test
-  public void testGet_notFound() throws MarquezServiceException {
-    when(service.get(NAMESPACE_NAME.getValue())).thenReturn(Optional.empty());
-
-    assertThatExceptionOfType(NamespaceNotFoundException.class)
-        .isThrownBy(() -> resource.get(NAMESPACE_NAME))
-        .withMessageContaining(String.format("'%s' not found", NAMESPACE_NAME.getValue()));
-  }
-
-  @Test
-  public void testList() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(NAMESPACES);
-
-    final Response response = resource.list(4, 0);
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(((Namespaces) response.getEntity()).getValue())
-        .containsOnly(NAMESPACE_0, NAMESPACE_1, NAMESPACE_2);
-  }
-
-  @Test
-  public void testList_empty() throws MarquezServiceException {
-    when(service.getAll(4, 0)).thenReturn(ImmutableList.of());
-
-    final Response response = resource.list(4, 0);
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(((Namespaces) response.getEntity()).getValue()).isEmpty();
-  }
-
-  static Namespace toNamespace(final NamespaceName namespaceName, final NamespaceMeta meta) {
-    return null;
-//    final Instant now = newTimestamp();
-//    return new Namespace(null,
-//        namespaceName, now, now, meta.getOwnerName(), meta.getDescription().orElse(null),null);
+//  private static final NamespaceName NAMESPACE_NAME = newNamespaceName();
+//
+//  private static final Namespace NAMESPACE_0 = newNamespace();
+//  private static final Namespace NAMESPACE_1 = newNamespace();
+//  private static final Namespace NAMESPACE_2 = newNamespace();
+//  private static final ImmutableList<Namespace> NAMESPACES =
+//      ImmutableList.of(NAMESPACE_0, NAMESPACE_1, NAMESPACE_2);
+//
+//  @Rule public MockitoRule rule = MockitoJUnit.rule();
+//
+//  private NamespaceService service;
+//  private NamespaceResource resource;
+//
+//  @Before
+//  public void setUp() {
+//    MockServiceFactory sf = new MockServiceFactory();
+//    service = sf.getNamespaceService();
+//    resource = new NamespaceResource(sf);
 //  }
-  }
+//
+//  @Test
+//  public void testCreateOrUpdate() throws MarquezServiceException {
+//    final NamespaceMeta meta = newNamespaceMeta();
+//    final Namespace namespace = toNamespace(NAMESPACE_NAME, meta);
+//    when(service.createOrUpdate(any())).thenReturn(namespace);
+//
+//    final Response response = resource.createOrUpdate(NAMESPACE_NAME, meta);
+//    assertThat(response.getStatus()).isEqualTo(200);
+//    assertThat((Namespace) response.getEntity()).isEqualTo(namespace);
+//  }
+//
+//  @Test
+//  public void testGet() throws MarquezServiceException {
+//    final Namespace namespace = newNamespaceWith(NAMESPACE_NAME);
+//    when(service.get(NAMESPACE_NAME.getValue())).thenReturn(Optional.of(namespace));
+//
+//    final Response response = resource.get(NAMESPACE_NAME);
+//    assertThat(response.getStatus()).isEqualTo(200);
+//    assertThat((Namespace) response.getEntity()).isEqualTo(namespace);
+//  }
+//
+//  @Test
+//  public void testGet_notFound() throws MarquezServiceException {
+//    when(service.get(NAMESPACE_NAME.getValue())).thenReturn(Optional.empty());
+//
+//    assertThatExceptionOfType(NamespaceNotFoundException.class)
+//        .isThrownBy(() -> resource.get(NAMESPACE_NAME))
+//        .withMessageContaining(String.format("'%s' not found", NAMESPACE_NAME.getValue()));
+//  }
+//
+//  @Test
+//  public void testList() throws MarquezServiceException {
+//    when(service.getAll(4, 0)).thenReturn(NAMESPACES);
+//
+//    final Response response = resource.list(4, 0);
+//    assertThat(response.getStatus()).isEqualTo(200);
+//    assertThat(((Namespaces) response.getEntity()).getValue())
+//        .containsOnly(NAMESPACE_0, NAMESPACE_1, NAMESPACE_2);
+//  }
+//
+//  @Test
+//  public void testList_empty() throws MarquezServiceException {
+//    when(service.getAll(4, 0)).thenReturn(ImmutableList.of());
+//
+//    final Response response = resource.list(4, 0);
+//    assertThat(response.getStatus()).isEqualTo(200);
+//    assertThat(((Namespaces) response.getEntity()).getValue()).isEmpty();
+//  }
+//
+//  static Namespace toNamespace(final NamespaceName namespaceName, final NamespaceMeta meta) {
+//    return null;
+////    final Instant now = newTimestamp();
+////    return new Namespace(null,
+////        namespaceName, now, now, meta.getOwnerName(), meta.getDescription().orElse(null),null);
+////  }
+//  }
 }

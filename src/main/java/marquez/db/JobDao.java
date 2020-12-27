@@ -15,9 +15,11 @@
 package marquez.db;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import marquez.common.Utils;
 import marquez.db.JobVersionDao.IoType;
 import marquez.db.mappers.JobMapper;
@@ -25,7 +27,9 @@ import marquez.service.input.JobInsertFragment;
 import marquez.service.input.JobServiceFragment.DatasetFragment;
 import marquez.service.models.Dataset;
 import marquez.service.models.Job;
+import marquez.service.models.JobVersion;
 import marquez.service.models.Namespace;
+import marquez.service.models.Run;
 import org.jdbi.v3.core.statement.PreparedBatch;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
@@ -38,6 +42,10 @@ public interface JobDao extends SqlObject {
   NamespaceDao createNamespaceDao();
   @CreateSqlObject
   DatasetDao createDatasetDao();
+  @CreateSqlObject
+  JobVersionDao createJobVersionDao();
+  @CreateSqlObject
+  RunDao createRunDao();
 
   default Job create(JobInsertFragment fragment) {
     UUID job = withHandle(t -> t.inTransaction(handle -> {
@@ -83,20 +91,23 @@ public interface JobDao extends SqlObject {
           .mapTo(UUID.class)
           .one();
 
-      UUID jobVersionUuid = handle.createQuery("INSERT INTO job_versions ("
+      UUID jobVersionUuid =
+          handle.createQuery("INSERT INTO job_versions ("
           + "created_at, "
           + "updated_at, "
           + "job_uuid, "
           + "job_context_uuid, "
           + "location,"
-          + "version"
+          + "version,"
+          + "latest_run_uuid"
           + ") VALUES ("
           + ":createdAt, "
           + ":updatedAt, "
           + ":jobUuid, "
           + ":jobContextUuid, "
           + ":location, "
-          + ":version) "
+          + ":version,"
+          + ":latest_run_uuid) "
           + "ON CONFLICT(version) "
           + "DO UPDATE "
           + " SET updated_at = :updatedAt, job_uuid = :jobUuid, job_context_uuid = :jobContextUuid"
@@ -107,6 +118,7 @@ public interface JobDao extends SqlObject {
           .bind("jobContextUuid", jobContextUuid)
           .bind("location", fragment.getLocation())
           .bind("version", fragment.getJobVersionUuid())
+          .bind("latest_run_uuid", fragment.getRunId())
           .mapTo(UUID.class)
           .one();
 
@@ -115,7 +127,7 @@ public interface JobDao extends SqlObject {
               + "SET current_version_uuid = :currentVersionUuid "
               + "WHERE uuid = :jobUuid")
           .bind("currentVersionUuid", jobVersionUuid)
-          .bind("uuid", jobUuid)
+          .bind("jobUuid", jobUuid)
           .execute();
 
       PreparedBatch batch = handle.prepareBatch("INSERT INTO job_versions_io_mapping ("
@@ -124,51 +136,52 @@ public interface JobDao extends SqlObject {
       //todo: move to insert/select w/ tuple
 
       if (fragment.getInputs() != null) {
+        PreparedBatch inputBatch = handle.prepareBatch(
+            "INSERT INTO runs_input_mapping (run_uuid, dataset_version_uuid) "
+                + "VALUES (:runUuid, :datasetVersionUuid) ON CONFLICT DO NOTHING");
         for (DatasetFragment dataset : fragment.getInputs()) {
-          Optional<Dataset> ds = createDatasetDao().findDataset(dataset.getNamespace(), dataset.getDatasetName());
+          Optional<Dataset> ds = createDatasetDao().find(dataset.getNamespace(), dataset.getDatasetName());
           if (ds.isPresent()) {
             //Note: This just accumulates inputs and outputs for all runs. It doesn't do a replace.
             batch.bind("jobVersionUuid", jobVersionUuid)
                 .bind("datasetUuid", ds.get().getUuid())
                 .bind("ioType", IoType.INPUT.name()).add();
+            if (fragment.getRunId().isPresent()) {
+              inputBatch
+                .bind("runUuid", fragment.getRunId().get())
+                .bind("datasetVersionUuid", ds.get().getCurrentVersion().getUuid());
+            }
           }
         }
+        inputBatch.execute();
       }
       if (fragment.getOutputs() != null) {
         for (DatasetFragment dataset : fragment.getOutputs()) {
-          Optional<Dataset> ds = createDatasetDao().findDataset(dataset.getNamespace(), dataset.getDatasetName());
+          Optional<Dataset> ds = createDatasetDao().find(dataset.getNamespace(), dataset.getDatasetName());
           if (ds.isPresent()) {
             batch.bind("jobVersionUuid", jobVersionUuid)
                 .bind("datasetUuid", ds.get().getUuid())
-                .bind("ioType", IoType.INPUT.name()).add();
+                .bind("ioType", IoType.OUTPUT.name()).add();
           }
         }
       }
       batch.execute();
 
       if (fragment.getRunId().isPresent()) {
-        handle.createUpdate("INSERT INTO runs_input_mapping (run_uuid, dataset_version_uuid) "
-            + "SELECT VALUES :runUuid, dv.uuid FROM dataset_versions dv "
-            + "INNER JOIN datasets AS d ON d.uuid = dv.dataset_uuid AND d.current_version_uuid = dv.uuid "
-            + "INNER JOIN namespaces n on d.namespace_uuid = n.uuid "
-            + "WHERE (d.name, n.name) IN (:datasetVersionUuid)") //todo verify tuple
-            .bind("runUuid", fragment.getRunId().get())
-            .bindList("datasetVersionUuid", fragment.getInputs())
-            .execute();
-
         handle.createUpdate("UPDATE runs "
             + "SET updated_at = :updatedAt, "
             + "    job_version_uuid = :jobVersionUuid "
-            + "WHERE uuid = :rowUuid")
+            + "WHERE uuid = :runUuid")
         .bind("updatedAt", now)
         .bind("jobVersionUuid", jobVersionUuid)
+        .bind("runUuid", fragment.getRunId().get())
         .execute();
       }
 
       return jobUuid;
     }));
 
-    return this.find(job).get();
+    return this.getJobWithDataset(job).get();
   }
 
   @SqlQuery(
@@ -190,9 +203,9 @@ public interface JobDao extends SqlObject {
   @SqlQuery(
       "SELECT j.*, n.name AS namespace_name FROM jobs AS j "
           + "INNER JOIN namespaces AS n "
-          + "  ON n.name = j.namespace_uuid"
-          + "WHERE j.uuid = :uuid")
-  Optional<Job> find(UUID uuid);
+          + "  ON n.uuid = j.namespace_uuid "
+          + "WHERE j.uuid = :jobUuid")
+  Optional<Job> find(UUID jobUuid);
 
   @SqlQuery(
       "SELECT j.*, n.name AS namespace_name FROM jobs AS j "
@@ -202,25 +215,55 @@ public interface JobDao extends SqlObject {
           + "LIMIT :limit OFFSET :offset")
   List<Job> findAll(String namespaceName, int limit, int offset);
 
-  default Optional<Job> getJobWithDataset(String namespaceName, String jobName) {
+  default Optional<Job> getJobWithDataset(UUID jobUuid) {
     return withHandle(handle -> {
-      Optional<Job> job = handle.createQuery("SELECT j.*, n.name AS namespace_name FROM jobs AS j "
-          + "INNER JOIN namespaces AS n "
-          + "  ON (n.name = :namespaceName AND "
-          + "      j.namespace_uuid = n.uuid AND "
-          + "      j.name = :jobName)")
+      Optional<Job> optionalJob = handle.createQuery("SELECT j.*, n.name AS namespace_name FROM jobs AS j "
+          + "INNER JOIN namespaces AS n ON n.uuid = j.namespace_uuid "
+          + "WHERE j.uuid = :jobUuid")
+          .bind("jobUuid", jobUuid)
           .map(new JobMapper())
           .findOne();
 
-      if (job.isEmpty()) {
-        return job;
+      if (optionalJob.isEmpty()) {
+        return optionalJob;
       }
 
+      Job job = optionalJob.get();
+      UUID currentJobVersion = job.getCurrentVersion().getUuid();
+      Optional<JobVersion> optionalJobVersion = createJobVersionDao().findBy(currentJobVersion);
+
+      if (optionalJobVersion.isEmpty()) {
+        return optionalJob;
+      }
+      job.setCurrentVersion(optionalJobVersion.get());
+
+      //todo optimize with IN clause
+      List<Dataset> inputs = job.getCurrentVersion().getInputs();
+      if (inputs != null) {
+        for (int i = 0; i < inputs.size(); i++) {
+          Dataset dataset = inputs.get(i);
+          Optional<Dataset> optionalDataset = createDatasetDao().findBy(dataset.getUuid());
+          if (optionalDataset.isPresent()) {
+            inputs.set(i, optionalDataset.get());
+          }
+        }
+      }
+      List<Dataset> outputs = job.getCurrentVersion().getOutputs();
+      if (outputs != null) {
+        for (int i = 0; i < outputs.size(); i++) {
+          Dataset dataset = outputs.get(i);
+          Optional<Dataset> optionalDataset = createDatasetDao().findBy(dataset.getUuid());
+          if (optionalDataset.isPresent()) {
+            outputs.set(i, optionalDataset.get());
+          }
+        }
+      }
+
+      job.getCurrentVersion().getLatestRun().ifPresent(run->
+          job.getCurrentVersion().setLatestRun(createRunDao().findBy(run.getUuid())));
 
 
-
-
-      return null;
+      return Optional.of(job);
     });
   }
 

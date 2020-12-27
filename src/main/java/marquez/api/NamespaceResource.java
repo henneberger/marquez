@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -67,7 +68,7 @@ public class NamespaceResource extends AbstractResource {
         .currentOwnerName(Optional.of(meta.getOwnerName().getValue()))
         .build();
     final Namespace namespace = serviceFactory.getNamespaceService().createOrUpdate(fragment);
-    return Response.ok(new NamespaceContract(namespace)).build();
+    return Response.ok(new NamespaceResponse(namespace)).build();
   }
 
   @Timed
@@ -77,8 +78,10 @@ public class NamespaceResource extends AbstractResource {
   @Path("/namespaces/{namespace}")
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("namespace") NamespaceName name) throws MarquezServiceException {
-    final Namespace namespace =
-        serviceFactory.getNamespaceService().get(name.getValue()).orElseThrow(() -> new NamespaceNotFoundException(name));
+    final NamespaceResponse namespace =
+        new NamespaceResponse(
+            serviceFactory.getNamespaceService().get(name.getValue()).orElseThrow(() -> new NamespaceNotFoundException(name))
+        );
     return Response.ok(namespace).build();
   }
 
@@ -92,7 +95,9 @@ public class NamespaceResource extends AbstractResource {
       @QueryParam("limit") @DefaultValue("100") int limit,
       @QueryParam("offset") @DefaultValue("0") int offset)
       throws MarquezServiceException {
-    final List<Namespace> namespaces = serviceFactory.getNamespaceService().getAll(limit, offset);
+    final List<NamespaceResponse> namespaces = serviceFactory.getNamespaceService().getAll(limit, offset)
+        .stream().map(NamespaceResponse::new)
+        .collect(Collectors.toList());
     return Response.ok(new Namespaces(namespaces)).build();
   }
 
@@ -100,6 +105,6 @@ public class NamespaceResource extends AbstractResource {
   static class Namespaces {
     @NonNull
     @JsonProperty("namespaces")
-    List<Namespace> value;
+    List<NamespaceResponse> value;
   }
 }

@@ -42,40 +42,4 @@ public final class Run {
   private RunStateRecord endState;
   private List<DatasetVersion> inputs;
   private List<DatasetVersion> outputs;
-
-//
-//  //Todo: Move json decoration to resource
-//  public RunState getState() {
-//    if (currentState != null) {
-//      return currentState.getState();
-//    }
-//    return null;
-//  }
-//  public Optional<Instant> getNominalStartTime() {
-//    return nominalStartTime;
-//  }
-//
-//  public Optional<Instant> getNominalEndTime() {
-//    return nominalEndTime;
-//  }
-//
-//  public Optional<Instant> getStartedAt() {
-//    if (startState != null) {
-//      return Optional.ofNullable(startState.getTransitionedAt());
-//    }
-//    return Optional.empty();
-//  }
-//
-//  public Optional<Instant> getEndedAt() {
-//    if (endState != null) {
-//      return Optional.ofNullable(endState.getTransitionedAt());
-//    }
-//    return Optional.empty();
-//  }
-//
-//  public Optional<Long> getDurationMs() {
-//    return this.getEndedAt()
-//        .flatMap(
-//            endedAt -> getStartedAt().map(startedAt -> startedAt.until(endedAt, MILLIS)));
-//  }
 }

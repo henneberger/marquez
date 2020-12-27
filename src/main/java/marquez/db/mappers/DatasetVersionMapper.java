@@ -27,13 +27,13 @@ public final class DatasetVersionMapper extends AbstractMapper<DatasetVersion> {
   public DatasetVersion map(
       @NonNull ResultSet results, @NonNull StatementContext context) throws SQLException {
     Set<String> columnNames = getColumnNames(results.getMetaData());
-    //todo not all columns are here
+
     return new DatasetVersion(
         uuidOrThrow(results, Columns.ROW_UUID, columnNames),
         timestampOrThrow(results, Columns.CREATED_AT, columnNames),
-        toDatasetLink(uuidOrThrow(results, Columns.DATASET_UUID, columnNames), stringOrThrow(results, Columns.DATASET_NAME, columnNames)),
+        toDatasetLink(uuidOrThrow(results, Columns.DATASET_UUID, columnNames)),
         uuidOrThrow(results, Columns.VERSION, columnNames),
-        toDatasetFieldsLink(uuidArrayOrThrow(results, Columns.FIELD_UUIDS, columnNames)),
+        toDatasetFieldsLink(uuidArrayOrNull(results, Columns.FIELD_UUIDS, columnNames)),
         toRunLink(uuidOrNull(results, Columns.RUN_UUID, columnNames)),
         toNamespaceLink(uuidOrNull(results, Columns.NAMESPACE_UUID, columnNames), stringOrNull(results, Columns.NAMESPACE_NAME, columnNames))
       );

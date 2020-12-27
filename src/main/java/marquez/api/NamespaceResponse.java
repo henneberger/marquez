@@ -3,11 +3,11 @@ package marquez.api;
 import lombok.experimental.Delegate;
 import marquez.service.models.Namespace;
 
-public class NamespaceContract {
+public class NamespaceResponse {
   @Delegate
   private final Namespace namespace;
 
-  public NamespaceContract(Namespace namespace) {
+  public NamespaceResponse(Namespace namespace) {
     this.namespace = namespace;
   }
 

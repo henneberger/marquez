@@ -184,10 +184,10 @@ public interface RunDao extends SqlObject {
   @RegisterRowMapper(RunMapper.class)
   Optional<Run> findBy(UUID rowUuid);
 
-  default Optional<Run> findByWithDatasets(UUID rowUuid) {
+  default Optional<Run> findByWithDatasets(UUID runUuid) {
     return withHandle(handle-> {
       Optional<Run> run = handle.createQuery(SELECT_RUN + " WHERE r.uuid = :rowUuid")
-          .bind("rowUuid", rowUuid)
+          .bind("rowUuid", runUuid)
           .map(new RunMapper())
           .findOne();
       if (run.isEmpty()) {
@@ -204,16 +204,19 @@ public interface RunDao extends SqlObject {
       run.get().setOutputs(outputs);
 
       List<DatasetVersion> inputs = handle.createQuery(
-          "SELECT dv.* "
+          "SELECT dv.*, d.name as dataset_name, n.name as namespace_name, n.uuid as namespace_uuid, "
+              + "ARRAY(SELECT dataset_field_uuid "
+              + "      FROM dataset_versions_field_mapping "
+              + "      WHERE dataset_version_uuid = dv.uuid) AS field_uuids "
               + " FROM runs_input_mapping i"
               + " INNER JOIN dataset_versions dv on i.dataset_version_uuid = dv.uuid"
-              + " WHERE i.run_uuid = :rowUuid")
-          .bind("rowUuid", rowUuid)
+              + " INNER JOIN datasets AS d ON d.uuid = dv.dataset_uuid "
+              + " INNER JOIN namespaces AS n ON n.uuid = d.namespace_uuid "
+              + " WHERE i.run_uuid = :runUuid")
+          .bind("runUuid", runUuid)
           .map(new DatasetVersionMapper())
           .list();
       run.get().setInputs(inputs);
-
-      //todo assure type safety for objects. Assure notnull-ness
 
       return run;
     });

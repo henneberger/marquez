@@ -42,6 +42,7 @@ public class DatasetInputFragment {
     private String type;
     private String name;
     private Optional<String> description;
+    private List<DatasetServiceFragment.TagFragment> tagFragments;
   }
 
   @Getter

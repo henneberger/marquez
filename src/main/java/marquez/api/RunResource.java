@@ -41,7 +41,7 @@ public class RunResource extends AbstractResource {
   @Produces(APPLICATION_JSON)
   public Response get() throws MarquezServiceException {
     final Run run = serviceFactory.getRunService().get(runId.getValue()).orElseThrow(() -> new RunNotFoundException(runId));
-    return Response.ok(run).build();
+    return Response.ok(new RunResponse(run)).build();
   }
 
   @Timed
@@ -94,6 +94,6 @@ public class RunResource extends AbstractResource {
         new RunStateInsertFragment(runId.getValue(), runState, Utils.toInstant(atAsIso));
 
     Run run = serviceFactory.getRunStateService().markRunAs(fragment);
-    return Response.ok(run).build();
+    return Response.ok(new RunResponse(run)).build();
   }
 }

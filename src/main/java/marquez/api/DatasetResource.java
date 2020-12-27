@@ -20,6 +20,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -85,9 +86,10 @@ public class DatasetResource extends AbstractResource {
             .build())
         .fields(datasetMeta.getFields().stream().map(f->
             FieldFragment.builder()
-              .type(f.getType())
-              .name(f.getName())
+              .type(f.getType().name())
+              .name(f.getName().getValue())
               .description(f.getDescription())
+                .tagFragments(f.getTags().stream().map(t->TagFragment.builder().name(t.getValue()).build()).collect(Collectors.toList()))
               .build()
             ).collect(Collectors.toList()))
         .namespace(NamespaceFragment.builder()
@@ -105,7 +107,13 @@ public class DatasetResource extends AbstractResource {
 
     final Dataset dataset = serviceFactory.getDatasetService()
         .createOrUpdate(namespaceName.getValue(), datasetName.getValue(), fragment);
-    return Response.ok(new DatasetContract(dataset)).build();
+    try {
+      new ObjectMapper().writeValueAsString(new DatasetResponse(dataset));
+    }catch (Exception e) {
+      e.printStackTrace();
+      System.out.println();
+    }
+    return Response.ok(new DatasetResponse(dataset)).build();
   }
 
   @Timed
@@ -124,7 +132,7 @@ public class DatasetResource extends AbstractResource {
         serviceFactory.getDatasetService()
             .get(namespace.getName(), datasetName.getValue())
             .orElseThrow(() -> new DatasetNotFoundException(datasetName));
-    return Response.ok(dataset).build();
+    return Response.ok(new DatasetResponse(dataset)).build();
   }
 
   @Timed
@@ -139,8 +147,11 @@ public class DatasetResource extends AbstractResource {
       throws MarquezServiceException {
     Namespace namespace = getNamespaceOrThrowIfNotFound(namespaceName);
 
-    final List<Dataset> datasets = serviceFactory.getDatasetService()
-        .getAll(namespace.getName(), limit, offset);
+    final List<DatasetResponse> datasets = serviceFactory.getDatasetService()
+        .getAll(namespace.getName(), limit, offset)
+        .stream()
+        .map(DatasetResponse::new)
+        .collect(Collectors.toList());
     return Response.ok(new Datasets(datasets)).build();
   }
 
@@ -148,6 +159,6 @@ public class DatasetResource extends AbstractResource {
   static class Datasets {
     @NonNull
     @JsonProperty("datasets")
-    List<Dataset> value;
+    List<DatasetResponse> value;
   }
 }

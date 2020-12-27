@@ -24,10 +24,12 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import marquez.Generator;
+import marquez.client.models.Field;
 import marquez.common.Utils;
 import marquez.service.models.Tag;
 
@@ -113,7 +115,7 @@ public final class ModelGenerator extends Generator {
   }
 
   public static Field newField() {
-    return new Field(newFieldName().getValue(), newFieldType(), newTagNames(2), Optional.of(newDescription()));
+    return new Field(newFieldName().getValue(), newFieldType(), newTagNames(2), newDescription());
   }
 
   public static FieldName newFieldName() {
@@ -128,9 +130,9 @@ public final class ModelGenerator extends Generator {
     return Stream.generate(ModelGenerator::newField).limit(limit).collect(toImmutableList());
   }
 
-  public static List<Tag> newTagNames(final int limit) {
-    return Stream.generate(ModelGenerator::newTagName).limit(limit).map(t->Tag.builder().name(t.getValue()).build()).collect(
-        Collectors.toList());
+  public static Set<String> newTagNames(final int limit) {
+    return Stream.generate(ModelGenerator::newTagName).limit(limit).map(TagName::getValue).collect(
+        Collectors.toSet());
   }
 
   public static TagName newTagName() {

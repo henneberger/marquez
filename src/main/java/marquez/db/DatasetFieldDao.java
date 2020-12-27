@@ -16,12 +16,15 @@ package marquez.db;
 
 import static org.jdbi.v3.sqlobject.customizer.BindList.EmptyHandling.NULL_STRING;
 
+import com.google.common.collect.ImmutableList;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import marquez.db.mappers.DatasetFieldMapper;
 import marquez.service.models.DatasetField;
+import marquez.service.models.Tag;
+import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindList;
@@ -30,6 +33,9 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 @RegisterRowMapper(DatasetFieldMapper.class)
 public interface DatasetFieldDao extends SqlObject {
+  @CreateSqlObject
+  TagDao createTagDao();
+
   @SqlQuery(
       "SELECT EXISTS ("
           + "SELECT 1 FROM dataset_fields AS df "
@@ -71,15 +77,34 @@ public interface DatasetFieldDao extends SqlObject {
           + "ORDER BY name")
   List<DatasetField> findAllIn(@BindList(onEmpty = NULL_STRING) UUID... rowUuids);
 
-  @SqlQuery(
-      "SELECT *, "
+  default List<DatasetField> findAll(UUID datasetUuid) {
+    return withHandle(handle-> {
+      List<DatasetField> fields = handle.createQuery("SELECT *, "
           + "ARRAY(SELECT tag_uuid "
           + "      FROM dataset_fields_tag_mapping "
           + "      WHERE dataset_field_uuid = uuid) AS tag_uuids "
           + "FROM dataset_fields "
           + "WHERE dataset_uuid = :datasetUuid "
           + "ORDER BY name")
-  List<DatasetField> findAll(UUID datasetUuid);
+          .bind("datasetUuid", datasetUuid)
+          .map(new DatasetFieldMapper())
+          .list();
+      if (fields == null) {
+        return ImmutableList.of();
+      }
+      for (DatasetField field : fields) {
+        List<Tag> tags = field.getTags();
+        for (int i = 0; i < tags.size(); i++) {
+          Tag tag = tags.get(i);
+          Optional<Tag> optionalTag = createTagDao().findBy(tag.getUuid());
+          if (optionalTag.isPresent()) {
+            tags.set(i, optionalTag.get());
+          }
+        }
+      }
+      return fields;
+    });
+  }
 
   @SqlQuery("SELECT COUNT(*) FROM dataset_fields")
   int count();

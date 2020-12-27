@@ -21,6 +21,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Optional;
@@ -86,7 +87,13 @@ public class JobResource extends AbstractResource {
       .build();
     final Job job = serviceFactory.getJobService()
         .createOrUpdate(namespaceName.getValue(), jobName.getValue(), fragment);
-    return Response.ok(job).build();
+    try {
+      new ObjectMapper().writeValueAsString(new JobResponse(job));
+    }catch (Exception e) {
+      e.printStackTrace();
+      System.out.println();
+    }
+    return Response.ok(new JobResponse(job)).build();
   }
 
   public static Set<DatasetFragment> toDatasetFragment(Set<DatasetId> datasets) {
@@ -124,7 +131,7 @@ public class JobResource extends AbstractResource {
     final Job job =
         serviceFactory.getJobService()
             .get(namespaceName.getValue(), jobName.getValue()).orElseThrow(() -> new JobNotFoundException(jobName));
-    return Response.ok(job).build();
+    return Response.ok(new JobResponse(job)).build();
   }
 
   @Timed
@@ -140,8 +147,10 @@ public class JobResource extends AbstractResource {
       throws MarquezServiceException {
     throwIfNotExists(namespaceName);
 
-    final List<Job> jobs = serviceFactory.getJobService()
-        .getAll(namespaceName.getValue(), limit, offset);
+    final List<JobResponse> jobs = serviceFactory.getJobService()
+        .getAll(namespaceName.getValue(), limit, offset)
+        .stream().map(JobResponse::new)
+        .collect(Collectors.toList());
     return Response.ok(new Jobs(jobs)).build();
   }
 
@@ -149,6 +158,6 @@ public class JobResource extends AbstractResource {
   static class Jobs {
     @NonNull
     @JsonProperty("jobs")
-    List<Job> value;
+    List<JobResponse> value;
   }
 }

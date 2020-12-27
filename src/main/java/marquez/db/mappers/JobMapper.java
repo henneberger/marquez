@@ -34,7 +34,6 @@ public final class JobMapper extends AbstractMapper<Job> {
         stringOrThrow(results, Columns.NAME, columnNames),
         timestampOrThrow(results, Columns.CREATED_AT, columnNames),
         timestampOrThrow(results, Columns.UPDATED_AT, columnNames),
-        null,
         Optional.ofNullable(stringOrNull(results, Columns.DESCRIPTION, columnNames)),
         null,
         toNamespaceLink(uuidOrThrow(results, Columns.NAMESPACE_UUID, columnNames), stringOrThrow(results, Columns.NAMESPACE_NAME, columnNames)),

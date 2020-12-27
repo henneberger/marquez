@@ -22,14 +22,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.NonNull;
-import marquez.common.models.Field;
 import marquez.db.mappers.DatasetMapper;
 import marquez.service.input.DatasetInputFragment;
 import marquez.service.input.DatasetInputFragment.FieldFragment;
 import marquez.service.input.DatasetServiceFragment.RunFragment;
+import marquez.service.input.DatasetServiceFragment.TagFragment;
 import marquez.service.models.Dataset;
+import marquez.service.models.DatasetField;
 import marquez.service.models.StreamVersion;
+import marquez.service.models.Tag;
 import org.jdbi.v3.core.statement.PreparedBatch;
+import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindList;
@@ -38,6 +41,11 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 public interface DatasetDao extends SqlObject {
+  @CreateSqlObject
+  DatasetFieldDao createDatasetFieldDao();
+  @CreateSqlObject
+  TagDao createTagDao();
+
   @Transaction
   default Dataset upsert(DatasetInputFragment fragment) {
     UUID uuid = withHandle(handle -> {
@@ -117,6 +125,10 @@ public interface DatasetDao extends SqlObject {
       PreparedBatch fieldMappingBatch = handle.prepareBatch(
             "INSERT INTO dataset_versions_field_mapping (dataset_version_uuid, dataset_field_uuid) "
             + "VALUES (:datasetVersionUuid, :datasetFieldUuid) ON CONFLICT DO NOTHING");
+      PreparedBatch fieldTagMappingBatch = handle.prepareBatch(
+          "INSERT INTO dataset_fields_tag_mapping (dataset_field_uuid, tag_uuid, tagged_at) "
+              + "VALUES (:fieldUuid, :tagUuid, :taggedAt) ON CONFLICT DO NOTHING");
+
       List<FieldFragment> fieldFragments = fragment.getFields();
       for (FieldFragment fieldFragment : fieldFragments) {
         UUID fieldUuid = handle.createQuery(
@@ -148,11 +160,24 @@ public interface DatasetDao extends SqlObject {
             .mapTo(UUID.class)
             .one();
 
+        for(TagFragment tag : fieldFragment.getTagFragments()) {
+          //todo move to gql decorator
+          Optional<Tag> optionalTag = createTagDao().findBy(tag.getName());
+          optionalTag.ifPresent((t)->
+            fieldTagMappingBatch
+                .bind("fieldUuid", fieldUuid)
+                .bind("tagUuid", t.getUuid())
+                .bind("taggedAt", fragment.getNow())
+                .add()
+          );
+        }
+
         fieldMappingBatch
             .bind("datasetVersionUuid", datasetVersionUuid)
             .bind("datasetFieldUuid", fieldUuid)
             .add();
       }
+      fieldTagMappingBatch.execute();
       fieldMappingBatch.execute();
 
       if (null instanceof StreamVersion) {
@@ -170,7 +195,7 @@ public interface DatasetDao extends SqlObject {
       return datasetUuid;
     });
 
-    return findBy(uuid)
+    return findByWithFields(uuid)
         .get();
   }
 
@@ -207,7 +232,7 @@ public interface DatasetDao extends SqlObject {
   static final String SELECT = "SELECT d.*, " + TAG_UUIDS + "FROM datasets AS d ";
 
   static final String EXTENDED_SELECT =
-      "SELECT d.*, s.name AS source_name, n.name as namespace_name, "
+      "SELECT d.*, s.name AS source_name, n.name as namespace_name, n.uuid as namespace_uuid, "
           + TAG_UUIDS
           + "FROM datasets AS d "
           + "INNER JOIN namespaces AS n "
@@ -219,15 +244,33 @@ public interface DatasetDao extends SqlObject {
   @RegisterRowMapper(DatasetMapper.class)
   Optional<Dataset> findBy(UUID rowUuid);
 
+  default Optional<Dataset> findByWithFields(UUID rowUuid) {
+    Optional<Dataset> optionalDataset = findBy(rowUuid);
+    if (optionalDataset.isPresent()) {
+      decorate(optionalDataset.get());
+    }
+    return optionalDataset;
+  }
+
+  private void decorate(Dataset dataset) {
+    List<DatasetField> fields = createDatasetFieldDao().findAll(dataset.getUuid());
+    dataset.setFields(fields);
+
+    if (dataset.getTags() != null) {
+      List<Tag> tags = dataset.getTags();
+      for (int i = 0; i < tags.size(); i++) {
+        Tag tag = tags.get(i);
+        Optional<Tag> optionalTag = createTagDao().findBy(tag.getUuid());
+        if (optionalTag.isPresent()) {
+          tags.set(i, optionalTag.get());
+        }
+      }
+    }
+  }
+
   @SqlQuery(EXTENDED_SELECT + "WHERE d.name = :datasetName AND n.name = :namespaceName")
   @RegisterRowMapper(DatasetMapper.class)
   Optional<Dataset> find(String namespaceName, String datasetName);
-
-
-  @SqlQuery("SELECT * FROM datasets WHERE name = :datasetName AND n.name = :namespaceName")
-  @RegisterRowMapper(DatasetMapper.class)
-  Optional<Dataset> findDataset(String namespaceName, String datasetName);
-
 
   @SqlQuery(EXTENDED_SELECT + " WHERE d.uuid IN (<rowUuids>)")
   @RegisterRowMapper(DatasetMapper.class)
@@ -242,13 +285,24 @@ public interface DatasetDao extends SqlObject {
   List<Dataset> findAllIn(
       String namespaceName, @BindList(onEmpty = NULL_STRING) Collection<String> datasetNames);
 
-  @SqlQuery(
-      EXTENDED_SELECT
+  default List<Dataset> findAll(String namespaceName, int limit, int offset) {
+    return withHandle(handle->{
+      List<Dataset> datasets = handle.createQuery(EXTENDED_SELECT
           + "WHERE n.name = :namespaceName "
           + "ORDER BY d.name "
           + "LIMIT :limit OFFSET :offset")
-  @RegisterRowMapper(DatasetMapper.class)
-  List<Dataset> findAll(String namespaceName, int limit, int offset);
+          .bind("namespaceName", namespaceName)
+          .bind("limit", limit)
+          .bind("offset", offset)
+          .map(new DatasetMapper())
+          .list();
+      for (Dataset dataset : datasets) {
+        decorate(dataset);
+      }
+
+      return datasets;
+    });
+  }
 
   @SqlQuery("SELECT COUNT(*) FROM datasets")
   int count();

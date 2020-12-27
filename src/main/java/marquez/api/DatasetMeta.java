@@ -28,7 +28,6 @@ import lombok.NonNull;
 import lombok.ToString;
 import marquez.common.models.DatasetName;
 import marquez.common.models.DatasetType;
-import marquez.common.models.Field;
 import marquez.common.models.NamespaceName;
 import marquez.common.models.RunId;
 import marquez.common.models.SourceName;

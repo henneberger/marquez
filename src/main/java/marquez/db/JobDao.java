@@ -97,10 +97,9 @@ public interface JobDao extends SqlObject {
           + ":jobContextUuid, "
           + ":location, "
           + ":version) "
-          + "ON CONFLICT (version) "
+          + "ON CONFLICT(version) "
           + "DO UPDATE "
-          + " SET updated_at = :updatedAt, job_uuid = :jobUuid, job_context_uuid = :jobContextUuid,"
-          + " version = :version"
+          + " SET updated_at = :updatedAt, job_uuid = :jobUuid, job_context_uuid = :jobContextUuid"
           + " RETURNING uuid")
           .bind("createdAt", now)
           .bind("updatedAt", now)

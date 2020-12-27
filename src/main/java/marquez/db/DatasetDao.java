@@ -102,7 +102,7 @@ public interface DatasetDao extends SqlObject {
         datasetVersionUuid = handle.createQuery(
             "INSERT INTO dataset_versions (created_at, dataset_uuid, version, run_uuid) "
                 + "VALUES (:createdAt, :datasetUuid, :version, :runUuid) "
-                + "ON CONFLICT(dataset_uuid, version) "
+                + "ON CONFLICT(version) "
                 + "DO UPDATE SET "
                 + "run_uuid = :runUuid "
                 + "RETURNING uuid")

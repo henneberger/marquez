@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.net.URL;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -57,7 +58,6 @@ import marquez.common.models.RunId;
 import marquez.common.models.RunState;
 import marquez.common.models.SourceName;
 import marquez.common.models.SourceType;
-import marquez.db.models.RunArgsRow;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}
@@ -72,7 +72,8 @@ public final class ModelGenerator extends Generator {
 
   public static Namespace newNamespaceWith(final NamespaceName namespaceName) {
     final Instant now = newTimestamp();
-    return new Namespace(null, namespaceName, now, now, newOwnerName(), newDescription(), null);
+    return new Namespace(null, namespaceName.getValue(), now, now, Optional.of(newDescription()), null,
+        Owner.builder().name(newOwnerName().getValue()).build());
   }
 
   public static Source newSource() {
@@ -82,8 +83,9 @@ public final class ModelGenerator extends Generator {
   public static Source newSourceWith(final SourceName sourceName) {
     final Instant now = newTimestamp();
     final SourceType sourceType = newSourceType();
-    return new Source(UUID.randomUUID(),
-        sourceType, sourceName, now, now, newConnectionUrlFor(sourceType), newDescription());
+    return null;
+//    return new Source(UUID.randomUUID(),
+//        sourceType, sourceName, now, now, newConnectionUrlFor(sourceType), newDescription());
   }
 
   public static DbTable newDbTable() {
@@ -93,17 +95,19 @@ public final class ModelGenerator extends Generator {
   public static DbTable newDbTableWith(final DatasetId dbTableId) {
     final Instant now = newTimestamp();
     final DatasetName physicalName = newDatasetName();
-    return new DbTable(
-        dbTableId,
-        dbTableId.getName(),
-        physicalName,
-        now,
-        now,
-        newSourceName(),
-        newFields(4),
-        newTagNames(2),
-        null,
-        newDescription());
+    return null;
+
+//    return new DbTable(
+//        dbTableId,
+//        dbTableId.getName(),
+//        physicalName,
+//        now,
+//        now,
+//        newSourceName(),
+//        newFields(4),
+//        newTagNames(2),
+//        null,
+//        newDescription());
   }
 
   public static DbTableMeta newDbTableMeta() {
@@ -111,8 +115,10 @@ public final class ModelGenerator extends Generator {
   }
 
   public static DbTableMeta newDbTableMetaWith(@Nullable final RunId runId) {
-    return new DbTableMeta(
-        newDatasetName(), newSourceName(), newFields(4), newTagNames(2), newDescription(), runId);
+    return null;
+
+//    return new DbTableMeta(
+//        newDatasetName(), newSourceName(), newFields(4), newTagNames(2), newDescription(), runId);
   }
 
   public static JobMeta newJobMeta() {
@@ -141,18 +147,20 @@ public final class ModelGenerator extends Generator {
   public static Job newJobWith(final JobId jobId, final int numOfInputs, final int numOfOutputs) {
     final Instant now = newTimestamp();
     final JobMeta jobMeta = newJobMetaWith(numOfInputs, numOfOutputs);
-    return new Job(
-        jobId,
-        jobMeta.getType(),
-        jobId.getName(),
-        now,
-        now,
-        jobMeta.getInputs(),
-        jobMeta.getOutputs(),
-        jobMeta.getLocation().orElse(null),
-        jobMeta.getContext(),
-        jobMeta.getDescription().orElse(null),
-        null);
+    return null;
+
+//    return new Job(
+//        jobId,
+//        jobMeta.getType(),
+//        jobId.getName(),
+//        now,
+//        now,
+//        jobMeta.getInputs(),
+//        jobMeta.getOutputs(),
+//        jobMeta.getLocation().orElse(null),
+//        jobMeta.getContext(),
+//        jobMeta.getDescription().orElse(null),
+//        null);
   }
 
   public static RunMeta newRunMeta() {
@@ -181,20 +189,22 @@ public final class ModelGenerator extends Generator {
       final RunId runId, final RunState runState, final String transitionedAt) {
     final Instant now = Utils.toInstant(transitionedAt);
     final RunMeta runMeta = newRunMeta();
-    return new Run(
-        runId,
-        now,
-        now,
-        null,
-        RunArgs.builder().args(newRunArgs()).build(),
-        runMeta.getNominalStartTime(),
-        runMeta.getNominalEndTime(),
-        RunStateRecord.builder().state(runState).build(),
-        null,
-        null,
-        null,
-        null
-        );
+    return null;
+
+//    return new Run(
+//        runId,
+//        now,
+//        now,
+//        null,
+//        RunArgs.builder().args(newRunArgs()).build(),
+//        runMeta.getNominalStartTime(),
+//        runMeta.getNominalEndTime(),
+//        RunStateRecord.builder().state(runState).build(),
+//        null,
+//        null,
+//        null,
+//        null
+//        );
   }
 
   public static RunState newRunState() {
@@ -224,7 +234,9 @@ public final class ModelGenerator extends Generator {
   }
 
   public static Tag newTag() {
-    return new Tag(newTagName(), newDescription());
+    return null;
+
+//    return new Tag(newTagName(), newDescription());
   }
 
   public static ImmutableSet<DatasetId> newInputs(final int limit) {

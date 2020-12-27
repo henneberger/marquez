@@ -14,7 +14,6 @@ import marquez.service.input.DatasetServiceFragment.RunFragment;
 @Builder
 @AllArgsConstructor
 public class DatasetInputFragment {
-  private UUID datasetVersion;
   private List<TagFragment> tags;
   private Instant now;
 

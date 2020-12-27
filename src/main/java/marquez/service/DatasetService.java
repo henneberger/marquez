@@ -97,10 +97,10 @@ public class DatasetService implements ServiceMetrics {
   public Optional<Dataset> get(@NonNull String namespace, @NonNull String datasetName) {
     return datasetDao.find(namespace, datasetName);
   }
-
-  public Optional<Dataset> getBy(@NonNull String namespace, String datasetName, UUID versionUuid) {
-    return datasetDao.find(namespace, datasetName, versionUuid);
-  }
+//
+//  public Optional<Dataset> getBy(@NonNull String namespace, String datasetName, UUID versionUuid) {
+//    return datasetDao.find(namespace, datasetName, versionUuid);
+//  }
 
   public List<Dataset> getAll(@NonNull String namespace, int limit, int offset) {
     checkArgument(limit >= 0, "limit must be >= 0");

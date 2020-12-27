@@ -578,6 +578,6 @@ public class MarquezAppIntegrationTest {
   }
 
   private static Field newFieldWith(final ImmutableSet<String> tags) {
-    return new Field(newFieldName().getValue(), newFieldType().name(), tags, newDescription());
+    return new Field(newFieldName().getValue(), newFieldType(), tags, newDescription());
   }
 }

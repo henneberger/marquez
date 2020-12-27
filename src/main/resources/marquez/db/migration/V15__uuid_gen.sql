@@ -13,3 +13,4 @@ alter table job_contexts alter column uuid set default uuid_generate_v4();
 alter table datasets alter column uuid set default uuid_generate_v4();
 alter table dataset_fields alter column uuid set default uuid_generate_v4();
 alter table dataset_versions alter column uuid set default uuid_generate_v4();
+ALTER TABLE dataset_versions ADD UNIQUE (version);

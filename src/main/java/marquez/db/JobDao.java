@@ -58,7 +58,7 @@ public interface JobDao extends SqlObject {
           + ":namespaceUuid, "
           + ":name, "
           + ":description) ON CONFLICT (name, namespace_uuid) DO UPDATE" //todo: Description is optional
-          + " SET updated_at = :updatedAt, type = :type, description = : description"
+          + " SET updated_at = :updatedAt, type = :type, description = :description"
           + " RETURNING uuid")
           .bind("type", fragment.getType())
           .bind("createdAt", now)
@@ -69,7 +69,6 @@ public interface JobDao extends SqlObject {
           .mapTo(UUID.class)
           .one();
 
-      //job context call here
       UUID jobContextUuid = handle.createQuery(
           "INSERT INTO job_contexts ("
               + "created_at, context, checksum) "
@@ -79,7 +78,7 @@ public interface JobDao extends SqlObject {
               + "context = :context "
               + "RETURNING uuid")
           .bind("createdAt", now)
-          .bind("context", fragment.getContext())
+          .bind("context", Utils.toJson(fragment.getContext()))
           .bind("checksum", Utils.checksumFor(fragment.getContext()))
           .mapTo(UUID.class)
           .one();

@@ -22,10 +22,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import marquez.Generator;
 import marquez.common.Utils;
+import marquez.service.models.Tag;
 
 public final class ModelGenerator extends Generator {
   private ModelGenerator() {}
@@ -109,23 +113,24 @@ public final class ModelGenerator extends Generator {
   }
 
   public static Field newField() {
-    return new Field(newFieldName(), newFieldType(), newTagNames(2), newDescription());
+    return new Field(newFieldName().getValue(), newFieldType(), newTagNames(2), Optional.of(newDescription()));
   }
 
   public static FieldName newFieldName() {
     return FieldName.of("test_field" + newId());
   }
 
-  public static FieldType newFieldType() {
-    return FieldType.values()[newIdWithBound(FieldType.values().length - 1)];
+  public static String newFieldType() {
+    return FieldType.values()[newIdWithBound(FieldType.values().length - 1)].name();
   }
 
   public static ImmutableList<Field> newFields(final int limit) {
     return Stream.generate(ModelGenerator::newField).limit(limit).collect(toImmutableList());
   }
 
-  public static ImmutableSet<TagName> newTagNames(final int limit) {
-    return Stream.generate(ModelGenerator::newTagName).limit(limit).collect(toImmutableSet());
+  public static List<Tag> newTagNames(final int limit) {
+    return Stream.generate(ModelGenerator::newTagName).limit(limit).map(t->Tag.builder().name(t.getValue()).build()).collect(
+        Collectors.toList());
   }
 
   public static TagName newTagName() {

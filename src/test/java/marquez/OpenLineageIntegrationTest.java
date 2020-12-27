@@ -29,61 +29,61 @@ import org.junit.experimental.categories.Category;
 
 @Category(IntegrationTests.class)
 public class OpenLineageIntegrationTest {
-  private static final String CONFIG_FILE = "config.test.yml";
-  private static final String CONFIG_FILE_PATH = ResourceHelpers.resourceFilePath(CONFIG_FILE);
-
-  private static final PostgresContainer POSTGRES = PostgresContainer.create("marquez");
-
-  static {
-    POSTGRES.start();
-  }
-
-  @ClassRule public static final JdbiRule dbRule = JdbiRuleInit.init();
-
-  @ClassRule
-  public static final DropwizardAppRule<MarquezConfig> APP =
-      new DropwizardAppRule<>(
-          MarquezApp.class,
-          CONFIG_FILE_PATH,
-          ConfigOverride.config("db.url", POSTGRES.getJdbcUrl()),
-          ConfigOverride.config("db.user", POSTGRES.getUsername()),
-          ConfigOverride.config("db.password", POSTGRES.getPassword()));
-
-  private final String baseUrl = "http://localhost:" + APP.getLocalPort();
-
-  @Test
-  public void testApp_openLineage() throws IOException {
-    URL resource = Resources.getResource("openLineage_events.json");
-    String lineageArr = Resources.toString(resource, Charset.defaultCharset());
-    HttpClient client = HttpClient.newBuilder()
-        .version(Version.HTTP_2)
-        .build();
-
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create(baseUrl + "/api/v1/event"))
-        .header("Content-Type", "application/json")
-        .POST(BodyPublishers.ofString(lineageArr))
-        .build();
-
-    client.sendAsync(request, BodyHandlers.ofString())
-        .thenApply(HttpResponse::body)
-        .thenAccept(System.out::println)
-        .join();
-
-  }
-
-  @Test
-  public void test_objectmapper() throws IOException {
-    URL resource = Resources.getResource("openLineage_events.json");
-    String lineageArr = Resources.toString(resource, Charset.defaultCharset());
-    System.out.println("src"+lineageArr);
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-    LineageEvent lineageEvent = mapper.readValue(resource, LineageEvent.class);
-    System.out.println(lineageEvent);
-    String outp = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(lineageEvent);
-
-  }
+//  private static final String CONFIG_FILE = "config.test.yml";
+//  private static final String CONFIG_FILE_PATH = ResourceHelpers.resourceFilePath(CONFIG_FILE);
+//
+//  private static final PostgresContainer POSTGRES = PostgresContainer.create("marquez");
+//
+//  static {
+//    POSTGRES.start();
+//  }
+//
+//  @ClassRule public static final JdbiRule dbRule = JdbiRuleInit.init();
+//
+//  @ClassRule
+//  public static final DropwizardAppRule<MarquezConfig> APP =
+//      new DropwizardAppRule<>(
+//          MarquezApp.class,
+//          CONFIG_FILE_PATH,
+//          ConfigOverride.config("db.url", POSTGRES.getJdbcUrl()),
+//          ConfigOverride.config("db.user", POSTGRES.getUsername()),
+//          ConfigOverride.config("db.password", POSTGRES.getPassword()));
+//
+//  private final String baseUrl = "http://localhost:" + APP.getLocalPort();
+//
+//  @Test
+//  public void testApp_openLineage() throws IOException {
+//    URL resource = Resources.getResource("openLineage_events.json");
+//    String lineageArr = Resources.toString(resource, Charset.defaultCharset());
+//    HttpClient client = HttpClient.newBuilder()
+//        .version(Version.HTTP_2)
+//        .build();
+//
+//    HttpRequest request = HttpRequest.newBuilder()
+//        .uri(URI.create(baseUrl + "/api/v1/event"))
+//        .header("Content-Type", "application/json")
+//        .POST(BodyPublishers.ofString(lineageArr))
+//        .build();
+//
+//    client.sendAsync(request, BodyHandlers.ofString())
+//        .thenApply(HttpResponse::body)
+//        .thenAccept(System.out::println)
+//        .join();
+//
+//  }
+//
+//  @Test
+//  public void test_objectmapper() throws IOException {
+//    URL resource = Resources.getResource("openLineage_events.json");
+//    String lineageArr = Resources.toString(resource, Charset.defaultCharset());
+//    System.out.println("src"+lineageArr);
+//    ObjectMapper mapper = new ObjectMapper();
+//    mapper.registerModule(new JavaTimeModule());
+//    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+//
+//    LineageEvent lineageEvent = mapper.readValue(resource, LineageEvent.class);
+//    System.out.println(lineageEvent);
+//    String outp = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(lineageEvent);
+//
+//  }
 }

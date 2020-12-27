@@ -14,74 +14,54 @@
 
 package marquez.service;
 
-import static marquez.common.models.ModelGenerator.newDescription;
-import static marquez.common.models.ModelGenerator.newTagName;
-import static marquez.db.models.ModelGenerator.newTagRowWith;
-import static marquez.db.models.ModelGenerator.newTagRows;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.Optional;
 import marquez.UnitTests;
-import marquez.common.models.TagName;
-import marquez.db.TagDao;
-import marquez.service.models.Tag;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 @Category(UnitTests.class)
 public class TagServiceTest {
-  private static final TagName TAG_NAME = newTagName();
-  private static final String TAG_DESCRIPTION = newDescription();
-
-  @Rule public MockitoRule rule = MockitoJUnit.rule();
-
-  @Mock private TagDao dao;
-  private TagService service;
-
-  @Before
-  public void setUp() {
-    service = new TagService(dao);
-  }
-
-  @Test
-  public void testCreateOrUpdate() {
-    final Tag newTag = new Tag(TAG_NAME, TAG_DESCRIPTION);
-    when(dao.exists(newTag.getName().getValue())).thenReturn(false);
-
-    final Tag newRow = newTagRowWith(TAG_NAME.getValue(), TAG_DESCRIPTION);
-    when(dao.findBy(newTag.getName().getValue())).thenReturn(Optional.of(newRow));
-
-    final Tag tag = service.upsert(newTag);
-    assertThat(tag).isEqualTo(newTag);
-  }
-
-  @Test
-  public void testExists() {
-    when(dao.exists(TAG_NAME.getValue())).thenReturn(true);
-
-    final boolean exists = service.exists(TAG_NAME);
-    assertThat(exists).isTrue();
-
-    verify(dao, times(1)).exists(TAG_NAME.getValue());
-  }
-
-  @Test
-  public void testGetAll() {
-    final List<Tag> newRows = newTagRows(4);
-    when(dao.findAll(4, 0)).thenReturn(newRows);
-
-    final List<Tag> tags = service.list(4, 0);
-    assertThat(tags).isNotNull().hasSize(4);
-
-    verify(dao, times(1)).findAll(4, 0);
-  }
+//  private static final TagName TAG_NAME = newTagName();
+//  private static final String TAG_DESCRIPTION = newDescription();
+//
+//  @Rule public MockitoRule rule = MockitoJUnit.rule();
+//
+//  @Mock private TagDao dao;
+//  private TagService service;
+//
+//  @Before
+//  public void setUp() {
+//    service = new TagService(dao);
+//  }
+//
+//  @Test
+//  public void testCreateOrUpdate() {
+//    final Tag newTag = new Tag(TAG_NAME, TAG_DESCRIPTION);
+//    when(dao.exists(newTag.getName().getValue())).thenReturn(false);
+//
+//    final Tag newRow = newTagRowWith(TAG_NAME.getValue(), TAG_DESCRIPTION);
+//    when(dao.findBy(newTag.getName().getValue())).thenReturn(Optional.of(newRow));
+//
+//    final Tag tag = service.upsert(newTag);
+//    assertThat(tag).isEqualTo(newTag);
+//  }
+//
+//  @Test
+//  public void testExists() {
+//    when(dao.exists(TAG_NAME.getValue())).thenReturn(true);
+//
+//    final boolean exists = service.exists(TAG_NAME);
+//    assertThat(exists).isTrue();
+//
+//    verify(dao, times(1)).exists(TAG_NAME.getValue());
+//  }
+//
+//  @Test
+//  public void testGetAll() {
+//    final List<Tag> newRows = newTagRows(4);
+//    when(dao.findAll(4, 0)).thenReturn(newRows);
+//
+//    final List<Tag> tags = service.list(4, 0);
+//    assertThat(tags).isNotNull().hasSize(4);
+//
+//    verify(dao, times(1)).findAll(4, 0);
+//  }
 }

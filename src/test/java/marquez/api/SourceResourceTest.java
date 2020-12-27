@@ -49,7 +49,7 @@ public class SourceResourceTest {
   @Test
   public void testGet() throws MarquezServiceException {
     final Source source = newSourceWith(SOURCE_NAME);
-    when(service.get(SOURCE_NAME)).thenReturn(Optional.of(source));
+    when(service.get(SOURCE_NAME.getValue())).thenReturn(Optional.of(source));
 
     final Response response = resource.get(SOURCE_NAME);
     assertThat(response.getStatus()).isEqualTo(200);
@@ -58,7 +58,7 @@ public class SourceResourceTest {
 
   @Test
   public void testGet_notFound() throws MarquezServiceException {
-    when(service.get(SOURCE_NAME)).thenReturn(Optional.empty());
+    when(service.get(SOURCE_NAME.getValue())).thenReturn(Optional.empty());
 
     assertThatExceptionOfType(SourceNotFoundException.class)
         .isThrownBy(() -> resource.get(SOURCE_NAME))

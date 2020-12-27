@@ -67,7 +67,7 @@ public class NamespaceResource extends AbstractResource {
         .currentOwnerName(Optional.of(meta.getOwnerName().getValue()))
         .build();
     final Namespace namespace = serviceFactory.getNamespaceService().createOrUpdate(fragment);
-    return Response.ok(namespace).build();
+    return Response.ok(new NamespaceContract(namespace)).build();
   }
 
   @Timed

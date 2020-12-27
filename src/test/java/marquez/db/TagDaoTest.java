@@ -39,106 +39,106 @@ import org.junit.experimental.categories.Category;
 
 @Category({DataAccessTests.class, IntegrationTests.class})
 public class TagDaoTest {
-
-  @ClassRule public static final JdbiRule dbRule = JdbiRuleInit.init();
-
-  private static TagDao tagDao;
-
-  @BeforeClass
-  public static void setUpOnce() {
-    final Jdbi jdbi = dbRule.getJdbi();
-    tagDao = jdbi.onDemand(TagDao.class);
-  }
-
-  @Test
-  public void testInsert() {
-    final int rowsBefore = tagDao.count();
-
-    final Tag newRow = newTagRow();
-    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
-
-    final int rowsAfter = tagDao.count();
-    assertThat(rowsAfter).isEqualTo(rowsBefore + 1);
-  }
-
-  @Test
-  public void testExists() {
-    final Tag newRow = newTagRow();
-    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
-
-    final boolean exists = tagDao.exists(newRow.getName().getValue());
-    assertThat(exists).isTrue();
-  }
-
-  @Test
-  public void testFindBy_uuid() {
-    final Tag newRow = tagDao.upsert(TagDao.UpsertTagFragment.build(newTagRow()));
-
-    final Optional<Tag> row = tagDao.findBy(newRow.getUuid());
-    assertThat(row).isPresent();
-  }
-
-  @Test
-  public void testFindBy_uuidNotFound() {
-    final Optional<Tag> row = tagDao.findBy(newRowUuid());
-    assertThat(row).isEmpty();
-  }
-
-  @Test
-  public void testFindBy_name() {
-    final Tag newRow = newTagRow();
-    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
-
-    final Optional<Tag> row = tagDao.findBy(newRow.getName().getValue());
-    assertThat(row).isPresent();
-  }
-
-  @Test
-  public void testFindBy_nameNotFound() {
-    final Optional<Tag> row = tagDao.findBy(newTagName().getValue());
-    assertThat(row).isEmpty();
-  }
-
-  @Test
-  public void testFindAllIn_uuidList() {
-    final List<Tag> newRows = newTagRows(4).stream()
-        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
-      .collect(Collectors.toList());
-
-    final List<UUID> newRowUuids =
-        newRows.stream().map(Tag::getUuid).collect(toImmutableList());
-
-    final List<Tag> rows = tagDao.findAllIn(toArray(newRowUuids, UUID.class));
-    assertThat(rows).hasSize(4);
-
-    final List<UUID> rowUuids = rows.stream().map(Tag::getUuid).collect(toImmutableList());
-    assertThat(rowUuids).containsAll(newRowUuids);
-  }
-
-  @Test
-  public void testFindAllIn_stringList() {
-    final List<Tag> newRows = newTagRows(4).stream()
-        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
-        .collect(Collectors.toList());
-
-    final List<String> newTagNames =
-        newRows.stream().map(newRow -> newRow.getName().getValue()).collect(toImmutableList());
-
-    final List<Tag> rows = tagDao.findAllIn(toArray(newTagNames, String.class));
-    assertThat(rows).hasSize(4);
-
-    final List<String> tagNames =
-        rows.stream().map(row -> row.getName().getValue()).collect(toImmutableList());
-    assertThat(tagNames).containsAll(newTagNames);
-  }
-
-  @Test
-  public void testFindAll() {
-    final List<Tag> newRows = newTagRows(4).stream()
-        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
-        .collect(Collectors.toList());
-
-    final List<Tag> rows = tagDao.findAll(4, 0);
-    assertThat(rows).isNotNull().hasSize(4);
-  }
+//
+//  @ClassRule public static final JdbiRule dbRule = JdbiRuleInit.init();
+//
+//  private static TagDao tagDao;
+//
+//  @BeforeClass
+//  public static void setUpOnce() {
+//    final Jdbi jdbi = dbRule.getJdbi();
+//    tagDao = jdbi.onDemand(TagDao.class);
+//  }
+//
+//  @Test
+//  public void testInsert() {
+//    final int rowsBefore = tagDao.count();
+//
+//    final Tag newRow = newTagRow();
+//    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
+//
+//    final int rowsAfter = tagDao.count();
+//    assertThat(rowsAfter).isEqualTo(rowsBefore + 1);
+//  }
+//
+//  @Test
+//  public void testExists() {
+//    final Tag newRow = newTagRow();
+//    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
+//
+//    final boolean exists = tagDao.exists(newRow.getName().getValue());
+//    assertThat(exists).isTrue();
+//  }
+//
+//  @Test
+//  public void testFindBy_uuid() {
+//    final Tag newRow = tagDao.upsert(TagDao.UpsertTagFragment.build(newTagRow()));
+//
+//    final Optional<Tag> row = tagDao.findBy(newRow.getUuid());
+//    assertThat(row).isPresent();
+//  }
+//
+//  @Test
+//  public void testFindBy_uuidNotFound() {
+//    final Optional<Tag> row = tagDao.findBy(newRowUuid());
+//    assertThat(row).isEmpty();
+//  }
+//
+//  @Test
+//  public void testFindBy_name() {
+//    final Tag newRow = newTagRow();
+//    tagDao.upsert(TagDao.UpsertTagFragment.build(newRow));
+//
+//    final Optional<Tag> row = tagDao.findBy(newRow.getName().getValue());
+//    assertThat(row).isPresent();
+//  }
+//
+//  @Test
+//  public void testFindBy_nameNotFound() {
+//    final Optional<Tag> row = tagDao.findBy(newTagName().getValue());
+//    assertThat(row).isEmpty();
+//  }
+//
+//  @Test
+//  public void testFindAllIn_uuidList() {
+//    final List<Tag> newRows = newTagRows(4).stream()
+//        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
+//      .collect(Collectors.toList());
+//
+//    final List<UUID> newRowUuids =
+//        newRows.stream().map(Tag::getUuid).collect(toImmutableList());
+//
+//    final List<Tag> rows = tagDao.findAllIn(toArray(newRowUuids, UUID.class));
+//    assertThat(rows).hasSize(4);
+//
+//    final List<UUID> rowUuids = rows.stream().map(Tag::getUuid).collect(toImmutableList());
+//    assertThat(rowUuids).containsAll(newRowUuids);
+//  }
+//
+//  @Test
+//  public void testFindAllIn_stringList() {
+//    final List<Tag> newRows = newTagRows(4).stream()
+//        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
+//        .collect(Collectors.toList());
+//
+//    final List<String> newTagNames =
+//        newRows.stream().map(newRow -> newRow.getName().getValue()).collect(toImmutableList());
+//
+//    final List<Tag> rows = tagDao.findAllIn(toArray(newTagNames, String.class));
+//    assertThat(rows).hasSize(4);
+//
+//    final List<String> tagNames =
+//        rows.stream().map(row -> row.getName().getValue()).collect(toImmutableList());
+//    assertThat(tagNames).containsAll(newTagNames);
+//  }
+//
+//  @Test
+//  public void testFindAll() {
+//    final List<Tag> newRows = newTagRows(4).stream()
+//        .map(newRow -> tagDao.upsert(TagDao.UpsertTagFragment.build(newRow)))
+//        .collect(Collectors.toList());
+//
+//    final List<Tag> rows = tagDao.findAll(4, 0);
+//    assertThat(rows).isNotNull().hasSize(4);
+//  }
 }

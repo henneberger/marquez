@@ -14,59 +14,54 @@
 
 package marquez.common.models;
 
-import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
+import marquez.service.models.Tag;
 
 @EqualsAndHashCode
 @ToString
+@Getter
+@AllArgsConstructor
+@Builder
+//todo Move to resource
 public final class Field {
-  @JsonUnwrapped
-  @JsonProperty(access = READ_ONLY)
-  @Getter
-  private final FieldName name;
-
-  @Getter private final FieldType type;
-  @Getter private final ImmutableSet<TagName> tags;
-  @Nullable private final String description;
-
-  @JsonCreator
-  public Field(
-      @JsonProperty("name") final String nameAsString,
-      @JsonProperty("type") final String typeAsString,
-      @JsonProperty("tags") final ImmutableSet<String> tagsAsString,
-      final String description) {
-    this(
-        FieldName.of(nameAsString),
-        FieldType.valueOf(typeAsString),
-        (tagsAsString == null)
-            ? ImmutableSet.of()
-            : tagsAsString.stream().map(TagName::of).collect(toImmutableSet()),
-        description);
-  }
-
-  public Field(
-      @NonNull final FieldName name,
-      @NonNull final FieldType type,
-      @Nullable final ImmutableSet<TagName> tags,
-      @Nullable final String description) {
-    this.name = name;
-    this.type = type;
-    this.tags = (tags == null) ? ImmutableSet.of() : tags;
-    this.description = description;
-  }
-
-  public Optional<String> getDescription() {
-    return Optional.ofNullable(description);
-  }
+  private final String name;
+  private final String type;
+  private final List<Tag> tags;
+  private final Optional<String> description;
+//
+//  @JsonCreator
+//  public Field(
+//      @JsonProperty("name") final String nameAsString,
+//      @JsonProperty("type") final String typeAsString,
+//      @JsonProperty("tags") final ImmutableSet<String> tagsAsString,
+//      final String description) {
+//    this(
+//        FieldName.of(nameAsString),
+//        FieldType.valueOf(typeAsString),
+//        (tagsAsString == null)
+//            ? ImmutableSet.of()
+//            : tagsAsString.stream().map(TagName::of).collect(toImmutableSet()),
+//        description);
+//  }
+//
+//  public Field(
+//      @NonNull final FieldName name,
+//      @NonNull final FieldType type,
+//      @Nullable final ImmutableSet<TagName> tags,
+//      @Nullable final String description) {
+//    this.name = name;
+//    this.type = type;
+//    this.tags = (tags == null) ? ImmutableSet.of() : tags;
+//    this.description = description;
+//  }
+//
+//  public Optional<String> getDescription() {
+//    return Optional.ofNullable(description);
+//  }
 }

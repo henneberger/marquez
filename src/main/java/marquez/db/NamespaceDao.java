@@ -43,7 +43,7 @@ public interface NamespaceDao extends SqlObject {
               .map(new NamespaceMapper())
               .one();
 
-          if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getCurrentOwner().getName())) {
+          if (isChangeOwnership(fragment.getCurrentOwnerName(), namespace.getCurrentOwner())) {
             if (fragment.getCurrentOwnerName().isPresent()) {
               String ownerUpsert =
                   "INSERT INTO owners (created_at, name) " + "VALUES (:createdAt, :name) "
@@ -83,14 +83,14 @@ public interface NamespaceDao extends SqlObject {
         }));
   }
 
-  default boolean isChangeOwnership(Optional<String> fragment, String namespace) {
+  default boolean isChangeOwnership(Optional<String> fragment, Owner owner) {
     if (fragment == null) {
       return false;
     }
-    if (fragment.isEmpty() && namespace != null) {
+    if (fragment.isEmpty() && owner != null) {
       return true;
     }
-    if (fragment.isPresent() && (namespace == null || !namespace.equals(fragment.get()))) {
+    if (fragment.isPresent() && (owner == null || !owner.getName().equals(fragment.get()))) {
       return true;
     }
     return false;

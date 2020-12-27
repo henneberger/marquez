@@ -78,14 +78,15 @@ public class DatasetResource extends AbstractResource {
         .name(datasetName.getValue())
         .physicalName(datasetMeta.getPhysicalName().getValue())
         .description(datasetMeta.getDescription())
+        .version(datasetMeta.version(namespaceName, datasetName).getValue())
         .source(SourceFragment.builder()
             .uuid(source.getUuid())
             .name(source.getName())
             .build())
         .fields(datasetMeta.getFields().stream().map(f->
             FieldFragment.builder()
-              .type(f.getType().name())
-              .name(f.getName().getValue())
+              .type(f.getType())
+              .name(f.getName())
               .description(f.getDescription())
               .build()
             ).collect(Collectors.toList()))
@@ -104,7 +105,7 @@ public class DatasetResource extends AbstractResource {
 
     final Dataset dataset = serviceFactory.getDatasetService()
         .createOrUpdate(namespaceName.getValue(), datasetName.getValue(), fragment);
-    return Response.ok(dataset).build();
+    return Response.ok(new DatasetContract(dataset)).build();
   }
 
   @Timed
@@ -121,7 +122,7 @@ public class DatasetResource extends AbstractResource {
 
     final Dataset dataset =
         serviceFactory.getDatasetService()
-            .get(namespaceName.getValue(), datasetName.getValue())
+            .get(namespace.getName(), datasetName.getValue())
             .orElseThrow(() -> new DatasetNotFoundException(datasetName));
     return Response.ok(dataset).build();
   }
@@ -139,7 +140,7 @@ public class DatasetResource extends AbstractResource {
     Namespace namespace = getNamespaceOrThrowIfNotFound(namespaceName);
 
     final List<Dataset> datasets = serviceFactory.getDatasetService()
-        .getAll(namespaceName.getValue(), limit, offset);
+        .getAll(namespace.getName(), limit, offset);
     return Response.ok(new Datasets(datasets)).build();
   }
 

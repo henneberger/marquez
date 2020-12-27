@@ -67,12 +67,13 @@ public interface DatasetDao extends SqlObject {
                   + "type = :type,"
                   + "updated_at = :updatedAt,"
                   + "source_uuid = :sourceUuid,"
-                  + "physicalName = :physicalName,"
-                  + "description = :description") //todo optional description
+                  + "physical_name = :physicalName,"
+                  + "description = :description "
+                  + "RETURNING uuid") //todo optional description
           .bind("type", fragment.getType())
           .bind("createdAt", fragment.getNow())
           .bind("updatedAt", fragment.getNow())
-          .bind("source_uuid", fragment.getSource().getUuid())
+          .bind("sourceUuid", fragment.getSource().getUuid())
           .bind("namespaceUuid", fragment.getNamespace().getUuid())
           .bind("name", fragment.getName())
           .bind("physicalName", fragment.getPhysicalName())
@@ -96,14 +97,13 @@ public interface DatasetDao extends SqlObject {
       if (fragment.getDatasetVersionIdFragment().isPresent()) {
         datasetVersionUuid = fragment.getDatasetVersionIdFragment().get().getUuid();
       } else {
-        UUID version = fragment.getDatasetVersion();
+        UUID version = fragment.getVersion();
         // Fields
         datasetVersionUuid = handle.createQuery(
             "INSERT INTO dataset_versions (created_at, dataset_uuid, version, run_uuid) "
                 + "VALUES (:createdAt, :datasetUuid, :version, :runUuid) "
-                + "ON CONFLICT(version) "
+                + "ON CONFLICT(dataset_uuid, version) "
                 + "DO UPDATE SET "
-                + "dataset_uuid = :datasetUuid, "
                 + "run_uuid = :runUuid "
                 + "RETURNING uuid")
             .bind("createdAt", fragment.getNow())
@@ -253,8 +253,6 @@ public interface DatasetDao extends SqlObject {
   @SqlQuery("SELECT COUNT(*) FROM datasets")
   int count();
 
-
-  Optional<Dataset> find(String namespace, String datasetName, UUID versionUuid);
 //  }
 //  if (!exists(namespaceName, datasetName)) {
 //    log.info(

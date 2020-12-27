@@ -45,7 +45,7 @@ public interface DatasetVersionDao {
   @SqlQuery(SELECT + "WHERE uuid = :uuid")
   Optional<DatasetVersion> findBy(UUID uuid);
 
-  @SqlQuery(SELECT + "WHERE version = :version)")
+  @SqlQuery(SELECT + "WHERE version = :version")
   Optional<DatasetVersion> findByVersion(UUID version);
 
 //

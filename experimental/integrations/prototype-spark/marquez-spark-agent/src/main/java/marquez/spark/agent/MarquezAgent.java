@@ -12,8 +12,12 @@ public class MarquezAgent {
    * Entry point for -javaagent, pre application start
    */
   public static void premain(String agentArgs, Instrumentation inst) {
+   premain(agentArgs, inst, new MarquezContext(agentArgs));
+  }
+
+  public static void premain(String agentArgs, Instrumentation inst, MarquezContext context) {
     log.info("MarquezAgent.premain " + agentArgs);
-    SparkListener.init(agentArgs);
+    SparkListener.init(agentArgs, context);
     instrument(inst);
     addShutDownHook();
   }

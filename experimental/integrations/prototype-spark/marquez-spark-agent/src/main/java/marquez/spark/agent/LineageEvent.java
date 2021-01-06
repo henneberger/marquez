@@ -24,7 +24,8 @@ import lombok.Builder;
 public class LineageEvent {
 
   public String eventType;
-  @NonNull public ZonedDateTime eventTime;
+  @NonNull
+  public ZonedDateTime eventTime;
   @NonNull
   public LineageRun run;
   @NonNull public LineageJob job;
@@ -51,6 +52,7 @@ public class LineageEvent {
     public NominalTimeFacet nominalTime;
     public LineageRunParent parent;
 
+    @Builder.Default
     private Map<String, Object> additional = new LinkedHashMap<>();
 
     @JsonAnySetter
@@ -120,6 +122,7 @@ public class LineageEvent {
     public DocumentationFacet documentation;
     public SourceCodeLocationFacet sourceCodeLocation;
     public SqlFacet sql;
+    @Builder.Default
     private Map<String, Object> additional = new LinkedHashMap<>();
 
     @JsonAnySetter
@@ -177,6 +180,7 @@ public class LineageEvent {
     public SchemaFacet schema;
     public DataSourceFacet dataSource;
     public String description;
+    @Builder.Default
     private Map<String, Object> additional = new LinkedHashMap<>();
 
     @JsonAnySetter

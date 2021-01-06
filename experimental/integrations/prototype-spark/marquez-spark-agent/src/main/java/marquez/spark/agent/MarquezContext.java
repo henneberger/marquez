@@ -1,7 +1,13 @@
 package marquez.spark.agent;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.util.Arrays;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -10,15 +16,17 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.codehaus.jackson.map.ObjectMapper;
 
 @Slf4j
 public class MarquezContext {
 
-  private String jobNamespace;
-  private String jobName;
-  private String parentRunId;
+  @Getter private static final ObjectMapper mapper = createMapper();
+  @Getter private String jobNamespace;
+  @Getter private String jobName;
+  @Getter private String parentRunId;
+
   private final CloseableHttpClient httpclient;
+
   private String get(String[] elements, String name, int index) {
     boolean check = elements.length > index + 1 && name.equals(elements[index]);
     if (check) {
@@ -45,7 +53,6 @@ public class MarquezContext {
 
   public void emit(LineageEvent event) {
     try {
-      ObjectMapper mapper = new ObjectMapper();
       String json = mapper.writeValueAsString(event);
       log.info("calling lineage: {}", json);
 
@@ -66,10 +73,18 @@ public class MarquezContext {
     }
   }
 
+  public static ObjectMapper createMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    mapper.disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+    return mapper;
+  }
+
   public void close() {
     try {
       httpclient.close();
-//      marquezClient = null;
     } catch (IOException e) {
       e.printStackTrace(System.out);
     }

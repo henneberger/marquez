@@ -1,0 +1,150 @@
+scalar UUID
+scalar DateTime
+
+type Query {
+  datasets: [Dataset]
+  namespace(name: String!): Namespace
+}
+
+type Tag {
+  uuid: UUID!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  description: String
+
+  fields: [DatasetField]!
+  datasets: [Dataset]!
+}
+
+type Source {
+  uuid: UUID!
+  type: String!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  connectionUrl: String!
+  description: String
+  datasets: [Dataset]!
+}
+type RunStateRecord {
+  uuid: UUID!
+  transitionedAt: DateTime!
+  state: RunState!
+  run: Run!
+}
+
+
+type RunArgs {
+  uuid: UUID!
+  createdAt: DateTime!
+  #args: Map<String, String>!
+  checksum: String!
+  run: [Run]!
+}
+type Run {
+  uuid: UUID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  nominalStartTime: DateTime
+  nominalEndTime: DateTime
+
+  jobVersion: JobVersion!
+  runArgs: RunArgs!
+  currentState: RunStateRecord
+  startState: RunStateRecord
+  endState: RunStateRecord!
+  inputs: [DatasetVersion]!
+  outputs: [DatasetVersion]!
+}
+type Owner {
+  uuid: UUID!
+  createdAt: DateTime!
+  name: String!
+  namespaces: [Namespace]!
+}
+type Namespace {
+  uuid: UUID!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  description: String
+  owner: [Owner]!
+  currentOwner: Owner!
+  jobs: [Job]
+  datasets: [Dataset]
+}
+type JobVersion {
+  uuid: UUID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  location: String
+  version: UUID!
+  jobContext: JobContext!
+  latestRun: Run
+  job: Job!
+  inputs: [Dataset]!
+  outputs: [Dataset]!
+}
+type JobContext {
+  uuid: UUID!
+  createdAt: DateTime!
+  context: String!
+  checksum: String!
+  jobVersion: [JobVersion]!
+}
+type Job {
+  uuid: UUID!
+  type: String!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  description: String
+  versions: [JobVersion]!
+  namespace: Namespace!
+  currentVersion: JobVersion!
+}
+type DatasetVersion {
+  uuid: UUID!
+  createdAt: DateTime!
+  dataset: Dataset!
+  version: UUID!
+  fields: [DatasetField]!
+  run: Run
+}
+type DatasetField {
+  uuid: UUID!
+  type: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  name: String!
+  description: String
+  dataset: Dataset!
+  versions: [DatasetVersion]!
+  tags: [Tag]!
+}
+type Dataset {
+  uuid: UUID!
+  type: String!
+  name: String!
+  physicalName: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastModifiedAt: DateTime
+  description: String
+  source: Source!
+  fields: [DatasetField]!
+  jobVersionAsInput: [JobVersion]!
+  jobVersionAsOutput: [JobVersion]!
+  namespace: Namespace!
+  tags: [Tag]!
+  currentVersion: DatasetVersion!
+  versions: [DatasetVersion]!
+}
+enum RunState {
+  NEW,
+  RUNNING,
+  COMPLETED,
+  ABORTED,
+  FAILED
+}

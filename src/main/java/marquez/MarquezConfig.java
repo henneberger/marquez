@@ -16,8 +16,11 @@ package marquez;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.smoketurner.dropwizard.graphql.GraphQLFactory;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import marquez.db.FlywayFactory;
@@ -25,6 +28,9 @@ import marquez.service.models.Tag;
 
 @NoArgsConstructor
 public final class MarquezConfig extends Configuration {
+  @NotNull
+  @Valid
+  public final GraphQLFactory graphql = new GraphQLFactory();
   private static final boolean DEFAULT_MIGRATE_ON_STARTUP = true;
   private static final ImmutableSet<Tag> DEFAULT_TAGS = ImmutableSet.of();
 
@@ -38,4 +44,5 @@ public final class MarquezConfig extends Configuration {
   @Getter
   @JsonProperty("flyway")
   private final FlywayFactory flywayFactory = new FlywayFactory();
+
 }

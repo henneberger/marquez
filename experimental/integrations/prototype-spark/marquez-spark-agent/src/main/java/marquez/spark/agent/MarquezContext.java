@@ -6,9 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import marquez.client.Backends;
+import marquez.client.MarquezClient;
+import marquez.client.models.LineageEvent;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -53,20 +57,23 @@ public class MarquezContext {
 
   public void emit(LineageEvent event) {
     try {
-      String json = mapper.writeValueAsString(event);
-      log.info("calling lineage: {}", json);
+//      String json = mapper.writeValueAsString(event);
+//      log.info("calling lineage: {}", json);
 
-      HttpPost httpPost = new HttpPost("http://localhost:5000/api/v1/event");
-      StringEntity entity = new StringEntity(json);
-      httpPost.setEntity(entity);
-      httpPost.setHeader("Accept", "application/json");
-      httpPost.setHeader("Content-type", "application/json");
+      MarquezClient client = new MarquezClient("http://localhost:5000");
+      client.emit(event);
 
-      try (CloseableHttpResponse response2 = httpclient.execute(httpPost)) {
-        System.out.println(response2.getCode() + " " + response2.getReasonPhrase());
-        HttpEntity entity2 = response2.getEntity();
-        EntityUtils.consume(entity2);
-      }
+//      HttpPost httpPost = new HttpPost("http://localhost:5000/api/v1/event");
+//      StringEntity entity = new StringEntity(json);
+//      httpPost.setEntity(entity);
+//      httpPost.setHeader("Accept", "application/json");
+//      httpPost.setHeader("Content-type", "application/json");
+//
+//      try (CloseableHttpResponse response2 = httpclient.execute(httpPost)) {
+//        System.out.println(response2.getCode() + " " + response2.getReasonPhrase());
+//        HttpEntity entity2 = response2.getEntity();
+//        EntityUtils.consume(entity2);
+//      }
     } catch (Exception e) {
       e.printStackTrace();
       log.error("Could not emit lineage", e);

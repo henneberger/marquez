@@ -4,7 +4,6 @@ package marquez.spark;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -14,7 +13,7 @@ import com.google.common.io.Resources;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import marquez.spark.agent.LineageEvent;
+import marquez.client.models.LineageEvent;
 import marquez.spark.agent.MarquezAgent;
 import marquez.spark.agent.MarquezContext;
 import net.bytebuddy.agent.ByteBuddyAgent;
@@ -34,7 +33,8 @@ public class LibraryTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        marquezContext = mock(MarquezContext.class);
+        marquezContext = new MarquezContext("/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54");
+//        marquezContext = mock(MarquezContext.class);
         ByteBuddyAgent.install();
         MarquezAgent.premain(
             "/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54",
@@ -73,10 +73,10 @@ public class LibraryTest {
 
     @Test
     public void testRdd() throws JsonProcessingException {
-        reset(marquezContext);
-        when(marquezContext.getJobNamespace()).thenReturn("ns_name");
-        when(marquezContext.getJobName()).thenReturn("job_name");
-        when(marquezContext.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+//        reset(marquezContext);
+//        when(marquezContext.getJobNamespace()).thenReturn("ns_name");
+//        when(marquezContext.getJobName()).thenReturn("job_name");
+//        when(marquezContext.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
 
         URL url = Resources.getResource("data.txt");
         SparkConf conf = new SparkConf().setAppName("Word Count")
@@ -102,26 +102,26 @@ public class LibraryTest {
 
     private void verifyEvents(List<LineageEvent> events) throws JsonProcessingException {
         for (LineageEvent event : events) {
-            assertNotNull(event.eventTime);
-            assertNotNull(event.eventType);
-            assertNotNull(event.job);
-            assertNotNull(event.job.name);
-            assertNotNull(event.job.namespace);
-            assertEquals("job_name", event.job.name);
-            assertEquals("ns_name", event.job.namespace);
-            assertNotNull(event.run);
-            assertNotNull(event.run.runId);
-            assertEquals("ea445b5c-22eb-457a-8007-01c7c52b6e54", event.run.runId);
-            assertNotNull(event.producer);
+            assertNotNull(event.getEventTime());
+            assertNotNull(event.getEventType());
+            assertNotNull(event.getJob());
+            assertNotNull(event.getJob().getName());
+            assertNotNull(event.getJob().getNamespace());
+            assertEquals("job_name", event.getJob().getName());
+            assertEquals("ns_name", event.getJob().getNamespace());
+            assertNotNull(event.getRun());
+            assertNotNull(event.getRun().getRunId());
+            assertEquals("ea445b5c-22eb-457a-8007-01c7c52b6e54", event.getRun().getRunId());
+            assertNotNull(event.getProducer());
 
-            assertNotNull(event.inputs);
-            assertEquals(1, event.inputs.size());
-            assertNotNull(event.inputs.get(0).name);
-            assertTrue(event.inputs.get(0).name.endsWith("data.txt"));
-            assertEquals("ns_name", event.inputs.get(0).namespace);
+            assertNotNull(event.getInputs());
+            assertEquals(1, event.getInputs().size());
+            assertNotNull(event.getInputs().get(0).getName());
+            assertTrue(event.getInputs().get(0).getName().endsWith("data.txt"));
+            assertEquals("ns_name", event.getInputs().get(0).getNamespace());
 
-            assertNotNull(event.outputs);
-            assertEquals(0, event.outputs.size());
+            assertNotNull(event.getOutputs());
+            assertEquals(0, event.getOutputs().size());
 
             assertNotNull("Event can serialize", marquezContext.createMapper()
                 .writeValueAsString(event));

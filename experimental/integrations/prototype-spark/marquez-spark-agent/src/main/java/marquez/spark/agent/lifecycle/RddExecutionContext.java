@@ -11,10 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import marquez.spark.agent.LineageEvent;
-import marquez.spark.agent.LineageEvent.LineageDataset;
-import marquez.spark.agent.LineageEvent.LineageJob;
-import marquez.spark.agent.LineageEvent.LineageRun;
+import marquez.client.models.LineageEvent;
+import marquez.client.models.LineageEvent.Dataset;
 import marquez.spark.agent.MarquezContext;
 import marquez.spark.agent.SparkListener;
 import org.apache.hadoop.conf.Configuration;
@@ -89,31 +87,31 @@ public class RddExecutionContext implements ExecutionContext {
 //    }
   }
 
-  private LineageJob buildJob() {
-    return LineageJob.builder()
+  private LineageEvent.Job buildJob() {
+    return LineageEvent.Job.builder()
         .namespace(marquezContext.getJobNamespace())
         .name(marquezContext.getJobName())
         .build();
   }
 
-  private LineageRun buildRun() {
-    return LineageRun.builder()
+  private LineageEvent.Run buildRun() {
+    return LineageEvent.Run.builder()
         .runId(marquezContext.getParentRunId())
         .build();
   }
 
-  private List<LineageDataset> buildOutputs(List<String> outputs) {
+  private List<Dataset> buildOutputs(List<String> outputs) {
     return outputs.stream()
-        .map(name->LineageDataset.builder()
+        .map(name-> Dataset.builder()
             .name(name)
             .namespace(marquezContext.getJobNamespace())
             .build())
         .collect(Collectors.toList());
   }
 
-  private List<LineageDataset> buildInputs(List<String> inputs) {
+  private List<Dataset> buildInputs(List<String> inputs) {
     return inputs.stream()
-        .map(name->LineageDataset.builder()
+        .map(name->Dataset.builder()
             .name(name)
             .namespace(marquezContext.getJobNamespace())
             .build())

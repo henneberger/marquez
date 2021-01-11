@@ -9,11 +9,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import marquez.spark.agent.LineageEvent;
-import marquez.spark.agent.LineageEvent.LineageDataset;
-import marquez.spark.agent.LineageEvent.LineageJob;
-import marquez.spark.agent.LineageEvent.LineageRun;
-import marquez.spark.agent.LineageEvent.RunFacet;
+import marquez.client.models.LineageEvent;
+import marquez.client.models.LineageEvent.Dataset;
+import marquez.client.models.LineageEvent.RunFacet;
 import marquez.spark.agent.MarquezContext;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.ActiveJob;
@@ -111,8 +109,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     return "FAIL";
   }
 
-  private List<LineageDataset> buildInputs(LogicalPlan logical) {
-    List<LineageDataset> inputDatasets = new ArrayList<>();
+  private List<Dataset> buildInputs(LogicalPlan logical) {
+    List<Dataset> inputDatasets = new ArrayList<>();
     Collection<LogicalPlan> leaves = asJavaCollection(logical.collectLeaves());
     for (LogicalPlan leaf : leaves) {
       if (!(leaf instanceof LogicalRelation)) {
@@ -126,7 +124,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       FileIndex location = ((HadoopFsRelation)lrr).location();
       Collection<Path> rootPaths = asJavaCollection(location.rootPaths());
       for (Path rootPath : rootPaths) {
-        LineageDataset.LineageDatasetBuilder lineageDataset = LineageDataset.builder()
+        Dataset.DatasetBuilder lineageDataset = Dataset.builder()
             .namespace(marquezContext.getJobNamespace())
             .name(rootPath.toUri().toString().replaceAll(":", "_"));
         inputDatasets.add(lineageDataset.build());
@@ -136,11 +134,11 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     return inputDatasets;
   }
 
-  private List<LineageDataset> buildOutputs(LogicalPlan logical) {
-    List<LineageDataset> inputDatasets = new ArrayList<>();
+  private List<Dataset> buildOutputs(LogicalPlan logical) {
+    List<Dataset> inputDatasets = new ArrayList<>();
     if (logical instanceof InsertIntoHadoopFsRelationCommand) {
       InsertIntoHadoopFsRelationCommand insert = (InsertIntoHadoopFsRelationCommand)logical;
-      inputDatasets.add(LineageDataset.builder()
+      inputDatasets.add(Dataset.builder()
           .namespace(marquezContext.getJobNamespace())
           .name(insert.outputPath().toUri().toString())
           .build());
@@ -148,8 +146,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     return inputDatasets;
   }
 
-  private LineageRun buildRun(Object logicalPlanFacet, Object physicalPlanFacet) {
-    return LineageRun.builder()
+  private LineageEvent.Run buildRun(Object logicalPlanFacet, Object physicalPlanFacet) {
+    return LineageEvent.Run.builder()
         .runId(marquezContext.getParentRunId())
         .facets(
             RunFacet.builder()
@@ -178,8 +176,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
   }
 
-  private LineageJob buildJob() {
-    return LineageJob.builder()
+  private LineageEvent.Job buildJob() {
+    return LineageEvent.Job.builder()
         .namespace(marquezContext.getJobNamespace())
         .name(marquezContext.getJobName())
         .build();

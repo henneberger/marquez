@@ -61,7 +61,7 @@ public class OpenLineageResource {
                 log.error("Unexpected error while processing request", err);
                 asyncResponse.resume(Response.status(INTERNAL_SERVER_ERROR).build());
               } else {
-                asyncResponse.resume(Response.status(201).build());
+                asyncResponse.resume(Response.status(201).entity(event).build());
               }
             });
   }

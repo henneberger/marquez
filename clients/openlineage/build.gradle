@@ -1,0 +1,78 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+  id 'checkstyle'
+  id 'jacoco'
+  id 'java-library'
+  id 'maven-publish'
+  id 'signing'
+  id 'com.github.spotbugs' version '4.5.0'
+  id 'com.adarshr.test-logger' version '1.7.0'
+  id 'com.github.jk1.dependency-license-report' version '1.9'
+  id 'net.researchgate.release' version '2.8.0'
+}
+
+import org.apache.tools.ant.filters.*
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+ext {
+  lombokVersion = '1.18.8'
+  slf4jVersion = '1.7.26'
+  isReleaseVersion = !version.endsWith("SNAPSHOT")
+}
+
+dependencies {
+  implementation 'org.slf4j:slf4j-api:1.7.26'
+  compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
+  compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.0'
+  compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.12.0'
+  implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+  testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+  implementation group: 'com.github.ok2c.hc5', name: 'hc5-async-json', version: '0.2.1'
+  testImplementation group: 'com.github.ok2c.hc5', name: 'hc5-async-json', version: '0.2.1'
+  implementation 'org.apache.maven:maven-archiver:3.5.0'
+  compileOnly "org.projectlombok:lombok:${lombokVersion}"
+  annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+  testImplementation group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+  testImplementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.assertj:assertj-core:3.12.2'
+  testImplementation 'org.mockito:mockito-core:2.27.0'
+}
+
+compileJava {
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+}
+
+task testUnit(type: Test) {
+  useJUnit {
+    includeCategories 'marquez.client.UnitTests'
+  }
+}

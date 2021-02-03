@@ -219,4 +219,28 @@ public interface GraphqlDaos extends SqlObject {
           + "inner join datasets on pq.uuid = datasets.uuid "
           + "order by r DESC")
   List<RowMap<String, Object>> searchDatasets(String query, String term);
+
+  @SqlQuery("select * from completed_lineage_events "
+      + "WHERE event#>'{job, name}' = '\":jobName\"' AND event#>'{job, namespace}' = '\":jobNamespace\"' "
+      + "AND event->'eventType' = '\"COMPLETE\"'"
+      + "order by (event->>'eventTime')::timestamp DESC "
+      + "limit 1;")
+  List<RowMap<String, Object>> getRecentLineageJob(String jobName, String jobNamespace);
+
+  @SqlQuery("select * from lineage_events "
+      + "WHERE "
+      + "  event->'inputs' @> '[{\"name\":\"':datasetName'\"}]' and "
+      + "  (event->>'eventTime')::timestamp > :lookback::timestamp "
+      + "order by (event->>'eventTime')::timestamp DESC "
+      + ";")
+  List<RowMap<String, Object>> getDatasetsAsInput(String datasetName, String lookback);
+
+  @SqlQuery("select * from lineage_events "
+      + "WHERE "
+      + "  event->'outputs' @> '[{\"name\":\":datasetName\"}]' and "
+      + "  (event->>'eventTime')::timestamp > :lookback::timestamp "
+      + " order by (event->>'eventTime')::timestamp DESC "
+      + ";")
+  List<RowMap<String, Object>> getDatasetAsOutput(String datasetName, String lookback);
+
 }

@@ -11,10 +11,12 @@ import com.google.common.collect.ImmutableList;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.validation.constraints.NotNull;
 import marquez.common.Utils;
 import marquez.common.models.DatasetType;
 import marquez.common.models.JobType;
@@ -33,12 +35,16 @@ import marquez.db.models.RunArgsRow;
 import marquez.db.models.RunRow;
 import marquez.db.models.RunStateRow;
 import marquez.db.models.SourceRow;
+import marquez.graphql.mapper.ObjectMapMapper;
+import marquez.graphql.mapper.RowMap;
 import marquez.service.models.LineageEvent;
 import marquez.service.models.LineageEvent.Dataset;
 import marquez.service.models.LineageEvent.Job;
 import marquez.service.models.LineageEvent.SchemaField;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.SqlObject;
+import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.postgresql.util.PGobject;
@@ -79,6 +85,40 @@ public interface OpenLineageDao extends SqlObject {
 
   @CreateSqlObject
   SourceDao createSourceDao();
+
+  @SqlUpdate(
+      "INSERT INTO completed_lineage_events ("
+          + "event"
+          + ") "
+          + "VALUES (?) "
+          + "ON CONFLICT ON CONSTRAINT lineage_event_pk DO NOTHING")
+  void createCompleteEvent(PGobject event);
+
+  @SqlQuery("select * from lineage_events "
+      + "WHERE "
+      + "event#>'{job, name}' = '\":jobName\"' and "
+      + "event#>'{job, namespace}' = '\":jobNamespace\"' and "
+      + "event#>'{run, runId}' = '\":runId\"'"
+      + "ORDER BY (event->>'eventTime')::timestamp ASC") //order is important for reduceAndCreateCompleteEvent
+  @RegisterRowMapper(ObjectMapMapper.class)
+  List<RowMap<String, Object>> getLineages(String runId, String jobName, String jobNamespace);
+
+  final ObjectMapper mapper = Utils.newObjectMapper();
+
+  @Transaction
+  default void reduceAndCreateCompleteEvent(
+      @NotNull String runId,
+      @NotNull String name,
+      @NotNull String namespace) {
+    List<RowMap<String, Object>> lineages = getLineages(runId, name, namespace);
+
+    Map<String, Object> complete = new HashMap<>();
+    for (RowMap<String, Object> map : lineages) {
+      complete.putAll(map);
+    }
+
+    createCompleteEvent(createJsonArray(complete, mapper));
+  }
 
   @SqlUpdate(
       "INSERT INTO lineage_events ("
@@ -458,7 +498,7 @@ public interface OpenLineageDao extends SqlObject {
     return VERSION_JOINER.join(fieldName, type, description);
   }
 
-  default PGobject createJsonArray(LineageEvent event, ObjectMapper mapper) {
+  default PGobject createJsonArray(Object event, ObjectMapper mapper) {
     try {
       PGobject jsonObject = new PGobject();
       jsonObject.setType("json");

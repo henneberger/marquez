@@ -31,7 +31,13 @@ public class OpenLineageService {
                     event.getJob().getName(),
                     event.getJob().getNamespace(),
                     openLineageDao.createJsonArray(event, mapper),
-                    event.getProducer()));
+                    event.getProducer()))
+            .thenAccept((a) -> {
+              if (event.getEventType() != null && event.getEventType().equals("COMPLETE")) {
+                openLineageDao.reduceAndCreateCompleteEvent(event.getRun().getRunId(),
+                    event.getJob().getName(), event.getJob().getNamespace());
+              }
+            });;
 
     return CompletableFuture.allOf(marquez, openLineage);
   }

@@ -102,6 +102,8 @@ type Job {
   versions: [JobVersion]
   namespace: Namespace
   currentVersion: JobVersion
+  inputs(lookback: String!): [Dataset]
+  outputs(lookback: String!): [Dataset]
 }
 type DatasetVersion {
   createdAt: DateTime
@@ -136,6 +138,8 @@ type Dataset {
   tags: [Tag]
   currentVersion: DatasetVersion
   versions: [DatasetVersion]
+  producedBy(lookback: String!): [Job]
+  usedBy(lookback: String!): [Job]
 }
 
 union DatasetLineage = DatasetVersionRef | DatasetVersionLineage

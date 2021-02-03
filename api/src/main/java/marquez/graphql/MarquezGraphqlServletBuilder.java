@@ -94,7 +94,10 @@ public class MarquezGraphqlServletBuilder {
                     .dataFetcher("jobVersionAsInput", dataFetchers.getJobVersionAsInputByDataset())
                     .dataFetcher("jobVersionAsOutput", dataFetchers.getVersionAsOutputByDataset())
                     .dataFetcher("tags", dataFetchers.getTagsByDataset())
-                    .dataFetcher("versions", dataFetchers.getVersionsByDataset()))
+                    .dataFetcher("versions", dataFetchers.getVersionsByDataset())
+                    .dataFetcher("producedBy", dataFetchers.getProducedBy())
+                    .dataFetcher("usedBy", dataFetchers.getUsedBy())
+            )
             .type(
                 newTypeWiring("Tag")
                     .dataFetcher("fields", dataFetchers.getDatasetFieldsByTag())
@@ -142,7 +145,10 @@ public class MarquezGraphqlServletBuilder {
                 newTypeWiring("Job")
                     .dataFetcher("versions", dataFetchers.getVersionsByJob())
                     .dataFetcher("namespace", dataFetchers.getNamespaceByJob())
-                    .dataFetcher("currentVersion", dataFetchers.getCurrentVersionByJob()))
+                    .dataFetcher("currentVersion", dataFetchers.getCurrentVersionByJob())
+                    .dataFetcher("inputs", dataFetchers.getDatasetOutputs())
+                    .dataFetcher("outputs", dataFetchers.getDatasetInputs())
+            )
             .type(
                 newTypeWiring("DatasetVersion")
                     .dataFetcher("fields", dataFetchers.getFieldsByDatasetVersion())

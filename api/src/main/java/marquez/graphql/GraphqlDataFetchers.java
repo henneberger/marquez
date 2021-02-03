@@ -490,4 +490,33 @@ public class GraphqlDataFetchers {
         return ImmutableMap.of("data", jobVersion);
     };
   }
+
+  public DataFetcher getDatasetOutputs() {
+    return dataFetchingEnvironment -> {
+      dataFetchingEnvironment.getField().getArguments();
+      Map<String, Object> job = dataFetchingEnvironment.getSource();
+      String jobName = (String)job.get("name");
+      String namespaceName = (String)dao.getNamespace((UUID)job.get("namespaceUuid")).get("name");
+      List<RowMap<String, Object>> asInputs = dao.getDatasetsAsInput(jobName, dataFetchingEnvironment.getArgument("lookback"));
+
+      List<RowMap<String, Object>> datasets = new ArrayList<>();
+      for (RowMap<String, Object> in : asInputs) {
+//        dao.getDataset();
+      }
+
+      return null;
+    };
+  }
+
+  public DataFetcher getDatasetInputs() {
+    return dataFetchingEnvironment -> null;
+  }
+
+  public DataFetcher getProducedBy() {
+    return  dataFetchingEnvironment -> null;
+  }
+
+  public DataFetcher getUsedBy() {
+    return  dataFetchingEnvironment -> null;
+  }
 }

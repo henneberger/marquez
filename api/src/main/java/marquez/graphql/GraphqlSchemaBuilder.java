@@ -51,6 +51,7 @@ public class GraphqlSchemaBuilder {
             newTypeWiring("Query")
                 .dataFetcher("datasets", dataFetchers.getDatasets())
                 .dataFetcher("dataset", dataFetchers.getDatasetByNamespaceAndName())
+                .dataFetcher("namespace", dataFetchers.getNamespaces())
                 .dataFetcher("namespace", dataFetchers.getNamespaceByName())
                 .dataFetcher("jobs", dataFetchers.getJobs())
                 .dataFetcher("job", dataFetchers.getJobsByNamespaceAndName()))
@@ -70,7 +71,7 @@ public class GraphqlSchemaBuilder {
                 .dataFetcher("datasets", dataFetchers.getDatasetsByTag()))
         .type(newTypeWiring("Source").dataFetcher("datasets", dataFetchers.getDatasetsBySource()))
         .type(
-            newTypeWiring("RunStateRecord")
+            newTypeWiring("RunTransition")
                 .dataFetcher("run", dataFetchers.getRunByRunStateRecord()))
         .type(
             newTypeWiring("Run")

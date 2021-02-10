@@ -1,120 +1,241 @@
 scalar UUID
+# An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp
 scalar DateTime
+# A non-typed result
 scalar Json
 
 type Query {
-  datasets: [Dataset]
-  dataset(namespace: String!, name: String!): Dataset
+  # Retrieves all namespaces
+  namespace: [Namespace]
+  # Retrieves a namespace
   namespace(name: String!): Namespace
+  # Retrieves all datasets
+  datasets: [Dataset]
+  # Retrieves a dataset
+  dataset(namespace: String!, name: String!): Dataset
+  # Retrieves all jobs
   jobs: [Job]
+  # Retrieves a job
   job(namespace: String!, name: String): Job
 }
 
-type Tag {
-  name: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  description: String
-
-  fields: [DatasetField]
-  datasets: [Dataset]
-}
+# A source is the physical location of a dataset such as a table in PostgreSQL, or topic in Kafka. A
+# source enables the grouping of physical datasets to their physical source.
 type Source {
+  # The type of the source. This field will always return an UPPERCASE result.
   type: String
+  # A friendly name for the source
   name: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
+  # An URL of how to connect to the source. An example would be a postgres identifier 
+  # such as postgres://localhost
   connectionUrl: String
+  # A description of the Source
   description: String
+  # The datasets that use this source
   datasets: [Dataset]
 }
-type RunStateRecord {
+# A transition of a run
+type RunTransition {
+  # The transition time
   transitionedAt: DateTime
-  state: String
+  # The state
+  state: RunState
+  # The run associated with the state transition
   run: Run
 }
+# The run state transitions
+enum RunState {
+  NEW,
+  RUNNING,
+  COMPLETED,
+  ABORTED,
+  FAILED
+}
+# A Run is an action that has taken place on a job.
 type Run {
+  uuid: UUID
+  external_id: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
+  # The time this run was scheduled to run
   nominalStartTime: DateTime
+  # The time this run was expected to be complete
   nominalEndTime: DateTime
-
+  # The specific job version this run was run against
   jobVersion: JobVersion
+  # The run args that were provided to the run
   runArgs: Json
-  currentState: String
-  startState: RunStateRecord
-  endState: RunStateRecord
-  states: [RunStateRecord]
+  # The current state of the run
+  currentState: RunState
+  # The start state of the run
+  startState: RunTransition
+  # The end state of the run
+  endState: RunTransition
+  # A list of all state transitions
+  states: [RunTransition]
+  # The dataset inputs to this run
   inputs: [DatasetVersion]
+  # The dataset outputs of this run
   outputs: [DatasetVersion]
 }
+# The owners of a Namespace
 type Owner {
+  # The date this oject created
   createdAt: DateTime
+  # The name of the owner
   name: String
+  # The namespaces this owner is a part of
   namespaces: [Namespace]
 }
+# A namespace enables the contextual grouping of related jobs and datasets. Jobs and datasets will
+# be unique within a namespace, but not across namespaces.
 type Namespace {
   name: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
+  # A description of the Namespace
   description: String
+  # The owners of this namespace
   owners: [Owner]
+  # The current owner of this namespace
   currentOwner: Owner
+  # The jobs in this namespace
   jobs: [Job]
+  # The datasets in this namespace
   datasets: [Dataset]
 }
-type JobVersion {
-  createdAt: DateTime
-  updatedAt: DateTime
-  location: String
-  version: UUID
-  jobContext: Json
-  latestRun: Run
-  job: Job
-  inputs: [Dataset]
-  outputs: [Dataset]
-}
+# A job describes a unit of work that modifies or reads from a dataset. The definition of a 'Job'
+# doesn't always match one-to-one with other systems. Individual 'tasks', as defined in some pipeline
+# systems, may be represented in marquez as a 'jobs' to get more granular lineage information.
 type Job {
+  # A type of the job that can be used for categorization. Must be: BATCH, STREAM, SERVICE
   type: String
+  # The name of the job
   name: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
+  # A description of the Job
   description: String
+  # The job versions associated with the job
   versions: [JobVersion]
+  # The Job's namespace
   namespace: Namespace
+  # The latest job version
   currentVersion: JobVersion
 }
-type DatasetVersion {
-  createdAt: DateTime
-  dataset: Dataset
+
+type JobVersion {
+  # A unique UUID that represents this dataset version
   version: UUID
+  # The date this oject created
+  createdAt: DateTime
+  # The date this object was updated
+  updatedAt: DateTime
+  # A URI of the source code location that the job was run with. If using github, it would
+  # be a uri of the latest commit hash for that job. e.g. https://github.com/example/marquez/commit/c0e80c4f
+  location: String
+  # The job context contains additional metadata associated with the job
+  jobContext: Json
+  # The latest run for this job version
+  latestRun: Run
+  # The job associated with the run
+  job: Job
+  # All input datasets for all runs that have been used for this job version.
+  inputs: [Dataset]
+  # All output datasets for all runs that have been used for this job version.
+  outputs: [Dataset]
+}
+
+# A dataset is a collection of data. For example a table, file, or folder
+type Dataset {
+  # The identifier of a dataset. This is the friendly name for the dataset name. For OpenLineage
+  # events, the friendly name is a the connection uri separated by dots (.).
+  name: String
+  # A grouping identfier for datasets. This differs from a data source type in that it is a high
+  #  level grouping identifier for a dataset. This can be only be "DB_TABLE" or "STREAM".
+  type: String
+  # The physical name for dataset. This is the presiding location of a dataset, usually a table
+  #  name or a URI with a path
+  physicalName: String
+  # The date this oject created
+  createdAt: DateTime
+  # The date this object was updated
+  updatedAt: DateTime
+  # The date a new version was generated
+  lastModifiedAt: DateTime
+  # A description of the Dataset
+  description: String
+  # The source associated with the dataset
+  source: Source
+  # The fields associated with the dataset
   fields: [DatasetField]
+  # The Job versions that use this dataset as its Input dataset
+  jobVersionAsInput: [JobVersion]
+  # The Job versions that use this dataset as its Output dataset
+  jobVersionAsOutput: [JobVersion]
+  # The Dataset's namespace
+  namespace: Namespace
+  # The tags associated with the dataset
+  tags: [Tag]
+  # The current dataset version associated with this dataset
+  currentVersion: DatasetVersion
+  # A list of all dataset versions
+  versions: [DatasetVersion]
+}
+
+type DatasetVersion {
+  # A unique UUID that represents this dataset version
+  version: UUID
+  # The date this oject created
+  createdAt: DateTime
+  # The dataset associated with this version
+  dataset: Dataset
+  # The fields associated with this dataset version
+  fields: [DatasetField]
+  # The run that created this dataset version
   run: Run
 }
+# Dataset fields is the definition of the dataset. This can be columns in a database or csv or
+#  other schema fields. Dataset fields are unique based on the dataset, name, and type.
 type DatasetField {
+  # The field' data type
   type: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
+  # The name of the field
   name: String
+  # A description of the Field
   description: String
+  # The dataset associated with the field
   dataset: Dataset
+  # The dataset versions associated with this field
   versions: [DatasetVersion]
+  # The tags associated with the tag
   tags: [Tag]
 }
-type Dataset {
-  type: String
+# Tag is an additional piece of metadata that can be used on datasets ands fields.
+type Tag {
   name: String
-  physicalName: String
+  # The date this oject created
   createdAt: DateTime
+  # The date this object was updated
   updatedAt: DateTime
-  lastModifiedAt: DateTime
+  # A description of the Tag
   description: String
-  source: Source
+  # The fields that are associated with this tag
   fields: [DatasetField]
-  jobVersionAsInput: [JobVersion]
-  jobVersionAsOutput: [JobVersion]
-  namespace: Namespace
-  tags: [Tag]
-  currentVersion: DatasetVersion
-  versions: [DatasetVersion]
+  # The datasets are associated with this tag
+  datasets: [Dataset]
 }

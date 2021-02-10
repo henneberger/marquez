@@ -37,6 +37,9 @@ public interface GraphqlDaos extends SqlObject {
   @SqlQuery("SELECT * FROM sources where uuid = :uuid")
   RowMap<String, Object> getSource(UUID uuid);
 
+  @SqlQuery("SELECT * FROM namespaces")
+  List<RowMap<String, Object>> getNamespaces();
+
   @SqlQuery("SELECT * FROM namespaces where uuid = :uuid")
   RowMap<String, Object> getNamespace(UUID uuid);
 

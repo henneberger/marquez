@@ -39,6 +39,11 @@ public class GraphqlDataFetchers {
     };
   }
 
+  public DataFetcher getNamespaces() {
+    return dataFetchingEnvironment -> {
+      return dao.getNamespaces();
+    };
+  }
   public DataFetcher getNamespaceByDataset() {
     return dataFetchingEnvironment -> {
       Map<String, Object> map = dataFetchingEnvironment.getSource();
